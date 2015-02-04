@@ -1,0 +1,13 @@
+--markup           markdown
+--template-path    yard
+--title 					'Bitcasa SDK for Ruby'
+--no-private
+--no-highlight
+--tag optimize:"OPTIMIZE" #--hide-tag optimize
+--tag review:"REVIEW" #--hide-tag review
+#--hide-tag todo
+#--hide-api private
+#--hide-void-return
+--hide-tag author
+'lib/**/*.rb' - '*.md'
+-
