@@ -6,7 +6,6 @@ require 'bitcasa/version'
 Gem::Specification.new do |spec|
   spec.name          = "bitcasa-test"
   spec.version       = Bitcasa::VERSION
- 	spec.version       = '0.0.1'
   spec.authors       = ['Bitcasa Inc.']
   spec.email         = ['dstrong@bitcasa.com']
   spec.summary       = 'Bitcasa Ruby SDK'
