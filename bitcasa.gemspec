@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.email         = ['dstrong@bitcasa.com']
   spec.summary       = 'Bitcasa Ruby SDK'
   spec.description   = 'Bitcasa SDK for CloudFS cloud storage filesystem'
-  spec.homepage      = "https://github.com/bitcasa/bitcasa-ruby"
+  spec.homepage      = "https://github.com/Izeltech-bitcasa/bitcasa-sdk-ruby.git"
 	spec.license			 = "MIT"
   spec.files         = Dir['lib/**/*', 'tests/**/*', '.yardopts']
   spec.has_rdoc      = false
