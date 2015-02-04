@@ -15,6 +15,7 @@ Gem::Specification.new do |spec|
 	spec.license			 = "MIT"
   spec.files         = Dir['lib/**/*', 'tests/**/*', '.yardopts']
   spec.require_paths = ['lib']
+  spec.has_rdoc      = 'yard'
 	spec.platform    = Gem::Platform::RUBY
 	spec.required_ruby_version = '>= 2.0.0'
 	spec.add_runtime_dependency 'httpclient', '>= 2.6.0'
