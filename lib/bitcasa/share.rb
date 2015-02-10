@@ -2,7 +2,7 @@ require_relative 'client'
 require_relative 'filesystem_common'
 
 module Bitcasa
-	# Share class is used to create and manage share	
+	# Share class is used to create and manage shares in end-user's account	
 	# 
 	# @author Mrinal Dhillon
 	class Share
@@ -22,19 +22,34 @@ module Bitcasa
 		# @return [String] size
 		attr_reader :size
 		
-		# @return [Timestamp] date_created in seconds since epoch
-		attr_reader :date_created		
-		
+		#	@!attribute [rw] name
 		# name of share	
 		# @overload name
 		# 	@return [String] name of share
 		# @overload name=(value)
 		# 	@param value [String]
-		# 	@raise [Client::Errors::ServiceError, 
-		#			Client::Errors::InvalidShareError]
-		attr_accessor :name
+		# 	@raise [Client::Errors::InvalidShareError]
+		def name=(value)
+			FileSystemCommon.validate_share_state(self)
+			@name = value
+			@changed_properties[:name] = value
+		end
 
-		# @param client [Client] bitcasa restful api object
+		def name
+			@name
+		end
+
+		#	@!attribute [r] date_created
+		#	@return [Time] creation time
+		def date_created
+			if @date_created
+				Time.at(@date_created)
+			else
+				nil
+			end
+		end
+
+		# @param client [Client] bitcasa RESTful api object
 		# @param [Hash] properties metadata of share
 		# @option  properties [String] :share_key
 		# @option properties [String] :share_type
@@ -76,40 +91,36 @@ module Bitcasa
 			@exists
 		end
 
-		# @see #name
-		def name=(value)
-			FileSystemCommon.validate_share_state(self)
-			@name = value
-			@changed_properties[:name] = value
-		end
-
+		
 		# List items in this share
 		# @return [Array<File, Folder>] list of items
-		# @raise [Client::Errors::ServiceError, 
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::InvalidShareError]
 		def list
 			FileSystemCommon.validate_share_state(self)
-			response = @client.browse_share(@share_key)
-			FileSystemCommon.create_items_from_hash_array(response.fetch(:items), 
+			response = @client.browse_share(@share_key).fetch(:items)
+			FileSystemCommon.create_items_from_hash_array(response, 
 					@client, in_share: true)
 		end
 
 		# Delete this share
-		# @note Subsequent operations shall raise Client::Errors::InvalidShareError
-		# @raise [Client::Errors::ServiceError, 
+		#	@return [true]
+		# @note Subsequent operations shall fail {Client::Errors::InvalidShareError}
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::InvalidShareError]
 		def delete
 			FileSystemCommon.validate_share_state(self)
 			@client.delete_share(@share_key)
 			@exists = false
-			nil
+			true
 		end
 	
 		# Change password of this share
+		#
 		# @param password	[String] new password for this share
 		# @param current_password [String] is required if password is already set for this share
-		# @return [Share] refrence to this share
-		# @raise [Client::Errors::ServiceError, 
+		# @return [Share] return self
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::InvalidShareError]
 		def set_password(password, current_password: nil)
 			FileSystemCommon.validate_share_state(self)
@@ -122,7 +133,7 @@ module Bitcasa
 		# Unlock this share
 		# @param password	[String] password for this share
 		# @return [Share] return self
-		# @raise [Client::Errors::ServiceError, 
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::InvalidShareError]
 		def unlock(password)
 			FileSystemCommon.validate_share_state(self)
@@ -131,12 +142,12 @@ module Bitcasa
 		end
 
 
-		# Save current state of this share
-		#		Only name, can be saved for share
+		# Save this share's current state.
+		#		Only name, is commited to this share in user's account
 		# @param password [String] current password for this share,
 		#		if has been set, it is necessary even if share has been unlocked
 		# @return [Share] returns self
-		# @raise [Client::Errors::ServiceError, 
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::InvalidShareError]
 		def save(password: nil)
 			FileSystemCommon.validate_share_state(self)
@@ -148,13 +159,15 @@ module Bitcasa
 			self
 		end
 
-		# Receive contents of this share at specified path in user's filesystem
-		#		All items found in share are copied to given location
+		# Receive contents of this share at specified path in user's filesystem.
+		#		All items found in share are copied to given location.
+		#
 		# @param path [String] path in user's account to receive share at, default is "/" root
 		# @param exists [String] ('RENAME', 'FAIL', 'OVERWRITE') action to take in 
 		#		case of conflict with existing items at path
+		#
 		# @return [Array<File, Folder>] items
-		# @raise [Client::Errors::ServiceError, 
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::InvalidShareError]
 		def receive(path: nil, exists: 'RENAME')
 			FileSystemCommon.validate_share_state(self)
@@ -165,13 +178,13 @@ module Bitcasa
 		end
 
 		# Refresh this share to latest state
+		#	@note Locally changed properties i.e. name get discarded
 		#
 		# @note raises Client::Errors::ServiceError if share is locked, 
 		#		unlock share if password is set
-		# @note discards any local changes, see #save
 		#
 		#	@return [Share] returns self
-		# @raise [Client::Errors::ServiceError, 
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::InvalidShareError]
 		def refresh
 			FileSystemCommon.validate_share_state(self)

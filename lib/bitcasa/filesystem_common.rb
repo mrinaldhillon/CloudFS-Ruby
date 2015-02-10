@@ -5,15 +5,49 @@ module Bitcasa
 	# Provides common filesystem operations consumed by other classes
 	module FileSystemCommon
 		extend self
+
+		# @return [Audio, Video, Photo, Document, File] based on mime type
+		def create_file_from_mime_type(client, parent: nil, 
+				in_trash: false, in_share: false, old_version: false, **hash)
+			require_relative 'file'
+			require_relative 'media'
+				
+			mime = hash[:mime]
+			if mime.include?("audio")
+				Audio.new(client, parent: parent, 
+						in_trash: in_trash, in_share: in_share, 
+						old_version: old_version, **hash)
+			elsif mime.include?("video")
+				Video.new(client, parent: parent, 
+						in_trash: in_trash, in_share: in_share, 
+						old_version: old_version, **hash)
+			elsif mime.include?("image")
+				Photo.new(client, parent: parent, 
+						in_trash: in_trash, in_share: in_share, 
+						old_version: old_version, **hash)
+			elsif mime.include?("text") || mime.include?("pdf")
+				Document.new(client, parent: parent, 
+						in_trash: in_trash, in_share: in_share, 
+						old_version: old_version, **hash)
+			else File.new(client, parent: parent, 
+						in_trash: in_trash, in_share: in_share, 
+						old_version: old_version, **hash)
+			end
+		end
+
+
 		# Create item from hash
 		# @param client [Client] restful client instance
 		# @param parent [Item, String] parent item of type folder
 		# @param in_trash [Boolean] set true to specify, item exists in trash
 		# @param in_share [Boolean] set true to specify, item exists in share
 		# @param old_version [Boolean] set true to specify, item is an old version
-		# @param [Hash] hash properties of item
+		# @param hash [Hash] item properties
 		# @return [File, Folder, Share] item
 		# @raise [Client::Errors::ArgumentError]
+		#	@review not creating file objects based on mime type, 
+		#		since save operation cannot update the class of file object, 
+		#		if mime is changed
 		def create_item_from_hash(client, parent: nil, 
 				in_trash: false, in_share: false, old_version: false, **hash)
 			require_relative 'file'
@@ -28,10 +62,15 @@ module Bitcasa
 						in_trash: in_trash, in_share: in_share, **hash)
 			else 
 				File.new(client, parent: parent, 
-						in_trash: in_trash, in_share: in_share, old_version: old_version, **hash)
+						in_trash: in_trash, in_share: in_share, 
+						old_version: old_version, **hash)
+#create_file_from_mime_type(client, parent: parent, 
+#		in_trash: in_trash, in_share: in_share, 
+#						old_version: old_version, **hash) 
+
 			end
 		end
-		
+
 		# Create array items from corresponding array of hashes
 		# @param hashes [Array<Hash>] array of hash properties of items
 		# @param client [Client] restful client instance
@@ -46,7 +85,8 @@ module Bitcasa
 			items = []
 			hashes.each do |item|
 				resp = create_item_from_hash(client, parent: parent, 
-						in_trash: in_trash, in_share: in_share, old_version: old_version, **item)
+						in_trash: in_trash, in_share: in_share, 
+						old_version: old_version, **item)
 				items << resp
 			end
 			items
@@ -100,6 +140,7 @@ module Bitcasa
 		def validate_item_state(item, in_trash: true, in_share: true, exists: true, 
 				old_version: true) 
 			require_relative 'item'
+			require_relative 'file'
 			return nil unless item.kind_of?(Item)
 			fail Client::Errors::InvalidItemError, 
 				"Operation not allowed as item does not exist anymore" if (exists && item.exists? == false)
@@ -108,7 +149,8 @@ module Bitcasa
 			fail Client::Errors::OperationNotAllowedError, 
 				"Operation not allowed as item is in share" if (in_share && item.in_share?)
 			fail Client::Errors::OperationNotAllowedError, 
-				"Operation not allowed as item is an older version" if (old_version && item.old_version?)
+				"Operation not allowed as item is an older version" if (
+						item.kind_of?(Bitcasa::File) && old_version && item.old_version?)
 		end
 
 		# Validate share's current state for operations
@@ -161,16 +203,15 @@ module Bitcasa
 		#
 		# @raise [Client::Errors::ServiceError]
 		def get_item_properties_from_server(client, parent_url, id, type, in_trash: false)
-			item_url = parent_url == "/" ? "/#{id}" : "#{parent_url}/#{id}"
+#	item_url = parent_url == "/" ? "/#{id}" : "#{parent_url}/#{id}"
+			item_url = parent_url.nil? ? "#{id}" : "#{parent_url}/#{id}"
 			if in_trash == true
-				response = client.browse_trash(path: item_url)
-				properties = response.fetch(:meta)
+				properties = client.browse_trash(path: item_url).fetch(:meta)
 			elsif type == "folder"
 				properties = client.get_folder_meta(item_url)
 			else
 				properties = client.get_file_meta(item_url)
 			end
-			properties
 		end
 
 	end

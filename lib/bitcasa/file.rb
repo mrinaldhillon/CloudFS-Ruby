@@ -8,18 +8,21 @@ module Bitcasa
 	#
 	# @author Mrinal Dhillon
 	# @example
-	#		file = session.filesystem.root.upload("/tmp/testfile")
+	#		file = session.filesystem.root.upload(local_file_path)
 	#		file.seek(4, IO::SEEK_SET) #=> 4
 	#		file.tell #=> 4
 	#		file.read #=> " is some buffer till end of file"
 	#		file.rewind 
 	#		file.read {|chunk| puts chunk} #=> "this is some buffer till end of file"
-	# 	file.download("/tmp", filename: "new_testfile")
+	# 	file.download(local_folder_path, filename: new_name_of_downloaded_file)
 	class File < Item
 		
 		# @see Item#initialize
 		def initialize(client, parent: nil, in_trash: false, 
 				in_share: false, old_version: false, **properties)
+			fail Client::Errors::ArgumentError, 
+		 	"Invalid item of type #{properties[:type]}" unless properties[:type] == "file"
+
 			@offset = 0
 			super
 		end
@@ -29,9 +32,12 @@ module Bitcasa
 		# @param local_path [String] path of local folder
 		# @param filename [String] name of downloaded file, default is name of this file
 		#
-		# @raise [Client::Errors::ServiceError, Client::Errors::ArgumentError, 
-		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
-		# @review download overwrite a file if it exists at local path
+		#	@return [true]
+		#
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
+		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
+		#		Client::Errors::OperationNotAllowedError]
+		# @review overwrites a file if it exists at local path
 		def download(local_path, filename: nil)
 			fail Client::Errors::ArgumentError, 
 				"local path is not a valid directory" unless ::File.directory?(local_path)
@@ -43,17 +49,17 @@ module Bitcasa
 			else
 				local_filepath = "#{local_path}/#{filename}"
 			end
-			puts local_filepath			
 			::File.open(local_filepath, 'wb') do |file|
 				@client.download(@url) { |buffer| file.write(buffer) }
 			end
+			true
 		end
 
 		# Read from file to buffer
 		#
 		#	@param bytecount [Fixnum] number of bytes to read from current access position 
 		# @return [String] buffer
-		# @raise [Client::Errors::ServiceError]
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError]
 		def read_to_buffer(bytecount)
 			buffer = @client.download(@url, startbyte: @offset, bytecount: bytecount)
 			@offset += buffer.nil? ? 0 : buffer.size
@@ -65,7 +71,7 @@ module Bitcasa
 		#	@param bytecount [Fixnum] number of bytes to read from current access position 
 		# @yield [String] chunk of data as soon as available, 
 		#		chunksize size may vary each time
-		# @raise [Client::Errors::ServiceError]
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError]
 		def read_to_proc(bytecount, &block)
 			@client.download(@url, startbyte: @offset, bytecount: bytecount) do |chunk|
 				@offset += chunk.nil? ? 0 : chunk.size
@@ -81,8 +87,9 @@ module Bitcasa
 		# @yield [String] chunk data as soon as available, 
 		#		chunksize size may vary each time
 		# @return [String] buffer, unless block is given
-		# @raise [Client::Errors::ServiceError, Client::Errors::ArgumentError, 
-		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
+		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
+		#		Client::Errors::OperationNotAllowedError]
 		def read(bytecount: nil, &block)
 			fail Client::Errors::ArgumentError, 
 				"Negative length given - #{bytecount}" if bytecount && bytecount < 0
@@ -136,7 +143,7 @@ module Bitcasa
 				@offset = @size + offset if whence == 2
 			else
 				fail Client::Errors::ArgumentError, 
-					"Invalid value of whence, should be 0 or IO::SEEK_SET, 1 or IO::SEEK_CUR, 2 or IO::SEEK_END,"
+					"Invalid value of whence, should be 0 or IO::SEEK_SET, 1 or IO::SEEK_CUR, 2 or IO::SEEK_END"
 			end
 			
 			@offset	

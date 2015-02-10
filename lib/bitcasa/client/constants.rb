@@ -1,7 +1,9 @@
 module Bitcasa
 	class Client
+		#	@private
 		# Declares bitcasa constants
 		module Constants
+			HTTP_AGENT_NAME = "BCSClient"
 			REQUEST_KEY_METHOD = "method"
 			REQUEST_KEY_URI = "uri"
 			HTTP_METHOD_KEY = "method"

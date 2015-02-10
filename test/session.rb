@@ -5,23 +5,25 @@ require 'securerandom'
 module TestSession
 	extend self
 		
-		@clientid = "zI7kQzt_L0TepyL2u0_NaENE96t1C8R8d42aLzKOR9U"
-		@secret = "KEf7pKSypEztTZ8By-rTNlyaaR_6VAVRQ7zDk1qV5XoB4o3CLygUbfCXJc8mnlvZg5KNUAfO4qLgMFFSMo51GA"
-		@host = "https://tjzvgtd91s.cloudfs.io"
+		@clientid = "oeNMAYpppXeTVm_T8pauBmiQWE-0I69_Tk1NNExXr5I"
+		@secret = "PY40SWUOSquNB3h6Yc-3-r7NINkZubnI1D-S-iV-Wo2obzihFHk_OPzWbgvWy92LE-x-dBsKBaAmuZxBQCPMJA"
+		@host = "dqm5sfycak.cloudfs.io"
 	
 		@admin_clientid = "37X7LQaHvXv-4mAubAWElw_pnPq-q29jsuR5H_XEr30"
 		@admin_secret = "kZkp7PQahsMhdTVbNA0IPr413kQ2dobAzNazJMZHE_HM8aNWN47EFa-pNJlhkOeNVsuUmGlxRcTva-PzusEqTQ"
-		@admin_host = "access.bitcasa.com"
+		@admin_host = ""
 
-		@username = "mrinal.dhillon@izeltech.com"
+		@username = "testuser@izeltech.com"
 		@password = "Pa55w0rd"
+		@http_debug = nil
 
-	def setup(create_new_account: false, create_user_first_time: false)
+	def setup(create_new_account: false, create_user_first_time: false, http_debug: nil)
 
 		puts "Setup Session.."
-
+		http_debug ||= @http_debug
 		puts "\nInitializing Session"
-		session = Bitcasa::Session.new(@clientid, @secret, @host)
+		session = Bitcasa::Session.new(@clientid, @secret, @host, 
+				http_debug: http_debug)
 
 		puts "\nSetting Admin credentials"
 		session.admin_credentials={clientid: @admin_clientid, secret: @admin_secret}
@@ -49,39 +51,39 @@ module TestSession
 		puts "\nGet User.."
 		user = session.user
 		puts "Userid: #{user.id}"
+		puts "Username: #{user.username}"
+		puts "User created at: #{user.created_at}"
+		puts "User last login time: #{user.last_login}"
 	end
 
 	def get_account(session)
 		puts "\nGet Account.."
 		account = session.account
 		puts "Account id: #{account.id}"
+		puts "Usage: #{account.usage}"
+		puts "Limit: #{account.limit}"
+		puts "Plan: #{account.plan}"
 	end
 
 	def get_history(session)
 		puts "\n Action history"
 		history_actions = session.action_history
-		history_actions.each do |action|
-			puts
-			puts action[:action]
-			puts action[:version]
-			puts action[:data]
-		end
 	end
 
 	def create_account(session, username, password)
 		puts "\nCreate Account"
 		account = session.create_account(username, password, email: "bc@izeltech.com", 
 				first_name: "izel", last_name: "tech")
-		puts "\nUsage: #{account.get_usage}"
-		puts "Quota: #{account.get_quota}"
-		puts "Plan: #{account.get_plan}"
-		puts "Username: #{account.username}"
+		puts "\nUsage: #{account.usage}"
+		puts "Limit: #{account.limit}"
+		puts "Plan: #{account.plan}"
 		account
 	end
 
-	def sessionapi
+	def sessionapi(http_debug: nil)
+		@http_debug = http_debug
 		session = setup(create_user_first_time: false, 
-				create_new_account: false)
+				create_new_account: false, http_debug: http_debug)
 		get_user(session)
 		get_account(session)
 		get_history(session)
@@ -92,7 +94,7 @@ end
 
 if __FILE__ == $0
 	begin
-		TestSession.sessionapi
+		TestSession.sessionapi(http_debug: nil)
 	rescue Bitcasa::Client::Errors::Error => error
 		puts error
 		puts error.class

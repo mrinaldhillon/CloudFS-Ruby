@@ -9,8 +9,8 @@ module TestAuthApi
 	@username = "mrinal.dhillon@izeltech.com"
 	@password = "Pa55w0rd"
 
-	def get_client
-		Bitcasa::Client.new(@clientid, @secret, @host)
+	def get_client(http_debug: nil)
+		Bitcasa::Client.new(@clientid, @secret, @host, http_debug: http_debug)
 	end
 
 	def authenticate(client)

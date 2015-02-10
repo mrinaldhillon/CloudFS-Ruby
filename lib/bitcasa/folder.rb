@@ -7,34 +7,61 @@ module Bitcasa
 	#
 	#	@author Mrinal Dhillon
 	#	@example
-	#		folder = session.filesystem.root.create_folder("testfolder")
+	#		folder = session.filesystem.root.create_folder(name_of_folder)
 	#		folder.name = "newname"
 	#		folder.save
-	#		file = folder.upload("/tmp/testfile")
+	#		file = folder.upload(local_file_path)
 	#		folder.list		#=> Array<File, Folder>
 	class Folder < Container
+	
 		# Upload file to this folder
 		#
-		# @param filepath [String] local file path
-		# @param name [String] (nil) name of uploaded file, default is basename of filepath
+		# @param source [String, #read&#pos&#pos=] local file path, in-memory string, 
+		#		an io object for example StringIO, File, Tempfile.
+		# @param name [String] default: nil, name of uploaded file, must be set 
+		#		if source does not respond to #path unless source is local file path
 		# @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME') 
-		#		action to take in case of a conflict with an existing folder, default 'FAIL'
+		#		action to take in case of a conflict with an existing folder.
+		#	@param upload_io [Boolean] default: false, 
+		#		if set to false, source is considered to be a local file path
 		#
-		# @return [File] new File object
-		# @raise [Client::Errors::ServiceError, Client::Errors::ArgumentError, 
+		# @return [File] instance refrence to uploaded file
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
-		def upload(filepath, name: nil, exists: 'FAIL')
+		# @example
+		#		Upload local file path
+		#			file = folder.upload(local_file_path, name: "testfile.txt")
+		#	@example
+		#		Upload ::File instance
+		# 	file = ::File.open(local_file_path, "r") do |fp|
+		#				folder.upload(fp, name: "testfile.txt", upload_io: true)
+		#		end
+		#	@example
+		#		Upload string
+		#			file = folder.upload("This is upload string", 
+		#				name: 'testfile.txt', upload_io: true)
+		#	@example
+		#		Upload stream
+		#			io = StringIO.new
+		#			io.write("this is test stringio")
+		#			file = folder.upload(io, name: 'testfile.txt', upload_io: true)
+		#			io.close
+		def upload(source, name: nil, exists: 'FAIL', upload_io: false)
 			FileSystemCommon.validate_item_state(self)
-
-			::File.open(filepath, "r") do |file|
-				response = @client.upload(@url, file, name: name, exists: exists)
-				FileSystemCommon.create_item_from_hash(@client, 
-						parent: @url, **response)
+			
+			if upload_io == false
+				response = ::File.open(source, "r") do |file|
+					@client.upload(@url, file, name: name, exists: exists)
+				end
+			else
+				response = @client.upload(@url, source, name: name, exists: exists)
 			end
+			FileSystemCommon.create_item_from_hash(@client, 
+						parent: @url, **response)
 		end
-		
+
 		# overriding inherited properties that are not not valid for folder
 		private :extension, :extension=, :mime, :mime=, :blocklist_key, 
-			:blocklist_id, :is_mirrored, :size, :versions
+			:blocklist_id, :size, :versions, :old_version?
 	end
 end

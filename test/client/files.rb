@@ -7,7 +7,7 @@ module TestFileApi
 	extend self
 	def fileapi(client, test_folder_url, do_populate_only: false)
 		temp_file = nil
-		file = nil
+		str_io = nil
 		puts "\nUploading file"
 		local_file_name = "testfile"	
 		puts "\nCreating temporary file to upload"
@@ -17,16 +17,15 @@ module TestFileApi
 			temp_file.write("this test file")
 		end
 		temp_file.flush
-		temp_file.close
+		temp_file.rewind
 
 		puts "\nMD5 hash of temporary file"
 		puts Digest::MD5.file(temp_file.path).hexdigest
-		file = ::File.open(temp_file.path, "r")
-		resp = client.upload(test_folder_url, file, 
-			name: "testfile.@new", exists: 'FAIL')
+		resp = client.upload(test_folder_url, temp_file, exists: 'FAIL')
+
 		file_url = "#{test_folder_url}/#{resp[:id]}"
 		version = resp[:version]
-
+	
 		str_io = StringIO.new
 		puts "\nFile read stream"
 		client.download(file_url) { |chunk| str_io.write(chunk) }
@@ -49,29 +48,31 @@ module TestFileApi
 		
 		puts "\nGet Metadata of testfile"
 		resp = client.get_file_meta(file_url)
-		puts resp
+		
 
 		puts "\nList file versions"
 		resp = client.list_file_versions(file_url)
-		puts resp
+		
 		version = resp[0][:version]
 		
 		puts "\nList single file version"
 		resp = client.list_single_file_version(file_url, version)
-		puts resp
+		
 
 		puts "\nPromote file version"
 		resp = client.promote_file_version(file_url, version)
-		puts resp
+		
 
 		puts "\nDelete file"
 		resp = client.delete_file(file_url, commit: true)
-		puts resp
+		
 		
 		ensure
-			file.close	if file
-			temp_file.unlink if temp_file
-			
+			if temp_file
+				temp_file.close
+				temp_file.unlink
+			end
+			str_io.close if str_io
 	end
 
 	def setup_testfolder(client, path, name)
@@ -83,11 +84,6 @@ module TestFileApi
 		end
 		puts "\nTestfolder name: #{resp[:name]}, path :#{test_folder_url}"
 		test_folder_url
-	end
-
-	def cleanup(client, test_folder_url)
-		puts "Deleting #{test_folder_url}"
-		puts client.delete_folder(test_folder_url, commit: true, force: true)
 	end
 
 	def api(client)

@@ -5,58 +5,66 @@ module Bitcasa
 	#
 	# @author Mrinal Dhillon
 	class User
-		# @return [String] end user's username
-		attr_reader :username
 		
-		# @return [Fixnum] creation time in milliseconds since epoch.
-		attr_reader :created_at
-		
+		#	@!attribute [r] id
+		# @return [String] internal id of user
+		def id
+			@properties[:id]
+		end
+
+		#	@!attribute [r] username
+		# @return [String] end-user's username
+		def username
+			@properties[:username]
+		end
+
+		#	@!attribute [r]	first_name
 		# @return [String] first name of user
-		attr_reader :first_name
-		
+		def first_name
+			@properties[:first_name]
+		end
+
+		#	@!attribute [r] last_name
 		# @return [String] last name of user
-		attr_reader :last_name
+		def last_name
+			@properties[:last_name]
+		end
 
-		# @return [String] account id
-		attr_reader :account_id
-		
-		# @return [String] locale
-		attr_reader :locale
-		
-		# @return [Hash] user account state
-		attr_reader :account_state
-		
-		# @return [Hash] storage details
-		attr_reader :storage
-		
-		# @return [Hash] account plan
-		attr_reader :account_plan
+		#	@!attribute [r]	email
+		# @return [String] email id of user
+		def email
+			@properties[:email]
+		end
 
-		# @return [String] eamil id of user
-		attr_reader :email
+		#	@!attribute [r] created_at
+		# @return [Time] account creation time
+		def created_at
+			if @properties[:created_at]
+				Time.at(@properties[:created_at]/1000.0)
+			else
+				nil
+			end
+		end
 
-		# @return [Hash] session details
-		attr_reader :session
-		
-		# @return [Fixnum] last login time in milliseconds since epoch
-		attr_reader :last_login
-		
-		# @return [Fixnum] internal id of user
-		attr_reader :id
-		
+		#	@!attribute [r] last_login
+		# @return [Time] last login time
+		def last_login
+			if @properties[:last_login]
+				Time.at(@properties[:last_login]/1000.0)
+			else
+				nil
+			end
+		end
+
 		# @param client [Client] bitcasa restful api object
 		# @param [Hash] properties metadata of user
-		# @option [String] :username
-		# @option [Fixnum] :created_at in milliseconds since epoch
-		# @option [String] :first_name
-		# @option [String] :last_name
-		# @option [String] :account_id
-		# @option [String] :local
-		# @option [String] :account_state
-		# @option [String] :email
-		# @option [Hash] :session
-		# @option [Fixnum] :last_login in milliseconds since epoch
-		# @option [String] :id
+		# @option properties [String] :username
+		# @option properties [Fixnum] :created_at in milliseconds since epoch
+		# @option properties [String] :first_name
+		# @option properties [String] :last_name
+		# @option properties [String] :email
+		# @option properties [Fixnum] :last_login in milliseconds since epoch
+		# @option properties [String] :id
 		def initialize(client, **properties)
 			fail Client::Errors::ArgumentError, 
 				"invalid client type #{client.class}, expected Bitcasa::Client" unless client.is_a?(Bitcasa::Client)
@@ -67,40 +75,13 @@ module Bitcasa
 
 		# @see #initialize
 		# @review required parameters
-		def set_user_info(**params)
-			@username = params.fetch(:username) { fail Client::Errors::ArgumentError, 
+		def set_user_info(**properties)
+			properties.fetch(:username) { fail Client::Errors::ArgumentError, 
 				"Missing required username" }
-			@created_at = params[:created_at]
-			@first_name = params[:first_name]
-			@last_name = params[:last_name]
-			@account_id = params[:account_id]
-			@locale = params[:locale]
-			@account_state = params[:account_state]
-			@storage = params[:storage]
-			@account_plan = params[:account_plan]
-			@email = params[:email]
-			@session = params[:session]
-			@last_login = params[:last_login]
-			@id = params[:id]
+			properties.fetch(:id) { fail Client::Errors::ArgumentError, 
+				"Missing required id" }
+			@properties = properties
 			nil
-		end
-
-		# Get current storage used by this user
-		# @return [Fixnum] usage in bytes
-		def get_usage
-			@storage.fetch(:usage).to_i
-		end
-	
-		# Get storage limit of this user
-		# @return [Fixnum] limit in bytes
-		def get_quota
-			@storage.fetch(:limit).to_i
-		end
-		
-		# Get this user's plan
-		# @return [String] plan	
-		def get_plan
-			@account_plan.map{|k, v| "#{k}['#{v}']"}.join(' ')
 		end
 
 		# Refresh this user's metadata from server

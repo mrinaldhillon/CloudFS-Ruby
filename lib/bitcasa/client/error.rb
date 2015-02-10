@@ -3,8 +3,30 @@ require_relative 'utils'
 module Bitcasa
 	class Client
 		# Defines exceptional behavior.
-		# All exceptions raised by Bitcasa SDK can be caught by 
-		#		rescue Bitcasa::Client::Errors::Error
+		# {Error} is base class of all exceptions raised by Bitcasa SDK.
+		# {Errors::ServiceError} is base class of all errors returned by 
+		#		Bitcasa Cloudfs service.
+		# Other exceptions are {Errors::ArgumentError}, {Errors::ClientError}, 
+		#		{Errors::InvalidItemError}, {Errors::InvalidShareError}, 
+		#		{Errors::OperationNotAllowedError}, {Errors::SessionNotLinked}
+		#
+		#	@example
+		#		begin
+		#			client.ping
+		#		rescue Client::Errors::SessionNotLinked
+		#			client.authenticate(username, password)
+		#			retry
+		#		rescue Client::Errors::ServiceError => error
+		#			puts error.message
+		#			puts error.request
+		#			puts error.response
+		#			puts error.code
+		#		rescue Client::Errors::Error => error
+		#			puts error.message
+		#			puts error.backtrace
+		#		end
+		#
+		# @author Mrinal Dhillon
 		module Errors
 		
 			# Maps exception classes to error codes returned by Bitcasa CloudFS Service
@@ -84,25 +106,42 @@ module Bitcasa
 				3018	=>	'NameRequired',
 				3019	=>	'SizeRequired',
 				3020	=>	'ToPathRequired',
-				3021	=>	'VersionMissingOrIncorrect'
+				3021	=>	'VersionMissingOrIncorrect',
+
+				# Endpoint Entry Errors
+				10000	=>	'InvalidPath',
+				10001	=>	'AlreadyExists',
+				10002	=>	'NotAllowed'
 			}
 	
-			# All errors can be rescue by Errors::Error
+			# All errors can be rescued by Errors::Error
 			#	Top most error class, all bitcasa exceptions can be rescued by this class
 			class Error < StandardError; end
 
-			class UnExpectedResponse < Error; end
+			# Item does not exists anymore, this is possible when item has been deleted
 			class InvalidItemError < Error; end	
+
+			# Share does not exists anymore, this is possible when share has been deleted
 			class InvalidShareError < Error; end	
+
+			# Operation not allowed error
 			class OperationNotAllowedError < Error; end	
+
+			# Invalid Argument error
 			class ArgumentError < Error; end
-			class SessionNotLinked < Error; end
+
+			# Session not linked error points out that either session 
+			#		is not authenticated or has been unlinked
+			class SessionNotLinked < Error
+				def initialize
+					super("session is not linked, please authenticate")
+				end
+			end
 			
 			# All HTTP errors can be rescued by Errors::HttpError
 			class HttpError < Error; end
 
-			# All HttpClient errors can be rescued by Errors::ClientError
-
+			# Base class of Client side errors - {ConnectionFailed}, {TimeoutError}
 			class ClientError < HttpError
 				# @return [Fixnum] http status
 				attr_reader :code
@@ -122,6 +161,7 @@ module Bitcasa
 						@original = error
 						@code = -1
 						@request = request
+						# nothing informative to provide here
 						@response = { :content => "HTTPClient Error", 
 							:content_type => "application/text", :code => -1 }
 					else 
@@ -134,11 +174,14 @@ module Bitcasa
 						@original.backtrace if @original && @original.respond_to?(:backtrace)
 				end
 			end
-		
+	
+			# Client side error when host is not reachable
 			class ConnectionFailed < ClientError; end
+
+			# Client side error when excution is expired due to send and receive time out
 			class TimeoutError < ClientError; end
 
-			# ServerError
+			# Exception for errors returned by remote service
 			class ServerError < HttpError
 				# @return [Fixnum] http status
 				attr_reader :code
@@ -161,9 +204,8 @@ module Bitcasa
 				end
 			end
 	
-			# All bitcasa service errors can be rescued Errors::ServiceError	
+			# Base class of all errors returned by bitcasa cloud service
 			class ServiceError < Error
-
 				# @param message [String] error message
 				# @param original [Exception] original exception
 				def initialize(message, original=nil)
@@ -207,21 +249,23 @@ module Bitcasa
 				end
 			end
 
-			class InvalidRequest <  ServiceError; end
-
 			class GeneralPanicError <  ServiceError; end
 			class APIError <  ServiceError; end
 			class APICallLimitReached < ServiceError; end
 
-			# All filesytem errors can be rescued by Errors::FileSystemError
+			# Base class for filesystem errors returned by bitcasa cloudfs service.
 			class FileSystemError < ServiceError; end
-			# All share errors can be rescued by Errors::ShareError
+
+			# Base class for share errors returned by bitcasa cloudfs service.
 			class ShareError < ServiceError; end
-			# All folder errors can be rescued by Errors::FolderError
+			
+			# Base class for folder errors returned by bitcasa cloudfs service.
 			class FolderError < ServiceError; end
-			# All file errors can be rescued by Errors::FileError
+			
+			# Base class for file errors returned by bitcasa cloudfs service.
 			class FileError < ServiceError; end
-			# All endpoint errors can be rescued by Errors::EndpointError
+			
+			# Base class for endpoint errors returned by bitcasa cloudfs service.
 			class EndpointError < ServiceError; end
 	
 			# FileSystem Errors	
@@ -294,15 +338,19 @@ module Bitcasa
 			class SizeRequired < FileError; end
 			class ToPathRequired < FileError; end
 			class FileVersionMissingOrIncorrect < FileError; end
+
+			# Enpoint Errors
+
 			class InvalidPath < EndpointError; end
 			class AlreadyExists < EndpointError; end
 			class NotAllowed < EndpointError; end
 
-			# Raise service error
-			# 		raises specific exception mapped by Bitcasa error code in json message
-			# @param error [ServerError] contains message and http code of ServerError
+			# Raises specific exception mapped by Bitcasa error code in json message
 			#
-			# @raise ServiceError mapped by code in message parameter in ServerError
+			# @param error [ServerError] contains message, request, response context 
+			#			and http code returned by bitcasa cloudfs service
+			#
+			# @raise [ServiceError] mapped by code in message parameter in {ServerError}
 			def self.raise_service_error(error)
 				begin
 					hash = Utils.json_to_hash(error.message)
@@ -320,7 +368,8 @@ module Bitcasa
 				end
 				raise ServiceError.new(message, error) unless code && BITCASA_ERRORS.key?(code)
 				raise const_get(BITCASA_ERRORS[code]).new(message, error)
-			end	
+			end
+
 		end	
 	end
 end

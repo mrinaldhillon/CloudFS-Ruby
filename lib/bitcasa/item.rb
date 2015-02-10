@@ -45,33 +45,6 @@ module Bitcasa
 		#			Client::Errors::OperationNotAllowedError]
 		attr_accessor :name
 
-		#	seconds since item was created
-		# @overload date_created
-		#		@return [Timestamp] creation time in seconds since epoch
-		# @overload date_created=(value)
-		# 	@param value [Timestamp]
-		# 	@raise [Client::Errors::InvalidItemError, 
-		#			Client::Errors::OperationNotAllowedError]
-		attr_accessor :date_created
-	
-		#	seconds since metadata of the item was last modified
-		# @overload date_meta_last_modified
-		#		@return [Timestamp] time in seconds since epoch at metadata was last modified
-		# @overload date_meta_last_modified=(value)
-		# 	@param value [Timestamp]
-		# 	@raise [Client::Errors::InvalidItemError, 
-		#			Client::Errors::OperationNotAllowedError]
-		attr_accessor :date_meta_last_modified
-
-		#	seconds since content of the item was last modified
-		# @overload date_content_last_modified
-		#		@return [Timestamp] time in seconds since epoch at content was last modified
-		# @overload date_content_last_modified=(value)
-		# 	@param value [String]
-		# 	@raise [Client::Errors::InvalidItemError, 
-		#			Client::Errors::OperationNotAllowedError]
-		attr_accessor :date_content_last_modified
-
 		# mime type of file
 		# @overload mime
 		# 	@return [String] mime type of file	
@@ -102,7 +75,120 @@ module Bitcasa
 		# 	@param hash [Hash]
 		# 	@raise [Client::Errors::InvalidItemError, 
 		#			Client::Errors::OperationNotAllowedError]
+		# 	@todo support update of nested hash, currently overwrites nested hash	
 		attr_accessor :application_data
+			
+		# see #name
+		def name=(value)
+			FileSystemCommon.validate_item_state(self)
+			@name = value
+			@changed_properties[:name] = value
+		end
+		
+		# @see #extension
+		def extension=(value)
+			fail OperationNotAllowedError, 
+				"Operation not allowed for item of type #{@type}" unless @type == "file"
+			FileSystemCommon.validate_item_state(self)
+			@extension = value
+			@changed_properties[:extension] = value
+		end
+
+		#	@!attribute [rw] date_created
+		#	Time when item was created
+		# @overload date_created
+		#		@return [Time] creation time
+		# @overload date_created=(value)
+		# 	@param value [Time] new creation time
+		# 	@raise [Client::Errors::InvalidItemError, 
+		#			Client::Errors::OperationNotAllowedError]
+		def date_created
+			if @date_created
+				Time.at(@date_created)
+			else
+				nil
+			end
+		end
+
+		# @see #date_created
+		def date_created=(value)
+			FileSystemCommon.validate_item_state(self)
+			@date_created = value.utc.to_i
+			@changed_properties[:date_created] = @date_created
+		end
+
+		#	@!attribute [rw] date_meta_last_modified
+		#	Time when item's metadata was last modified
+		# @overload date_meta_last_modified
+		#		@return [Time] time when metadata was last modified
+		# @overload date_meta_last_modified=(value)
+		# 	@param value [Time] new metadata modification time
+		# 	@raise [Client::Errors::InvalidItemError, 
+		#			Client::Errors::OperationNotAllowedError]
+		def date_meta_last_modified
+			if @date_meta_last_modified
+				Time.at(@date_meta_last_modified)
+			else
+				nil
+			end
+		end
+
+		# @see #date_meta_last_modified
+		def date_meta_last_modified=(value)
+			FileSystemCommon.validate_item_state(self)
+			@date_meta_last_modified = value.utc.to_i
+			@changed_properties[:date_meta_last_modified] = @date_meta_last_modified
+		end
+
+		#	@!attribute [rw] date_content_last_modified
+		#	Time when item's content was last modified
+		# @overload date_content_last_modified
+		#		@return [Time] time when content was last modified
+		# @overload date_content_last_modified=(value)
+		# 	@param value [Time] new content modification time
+		# 	@raise [Client::Errors::InvalidItemError, 
+		#			Client::Errors::OperationNotAllowedError]
+		def date_content_last_modified
+			if @date_content_last_modified
+				Time.at(@date_content_last_modified)
+			else
+				nil
+			end
+		end
+
+		# @see #date_content_last_modified
+		def date_content_last_modified=(value)
+			FileSystemCommon.validate_item_state(self)
+			@date_content_last_modified = value.utc.to_i
+			@changed_properties[:date_content_last_modified] = @date_content_last_modified
+		end
+
+		# see #mime
+		def mime=(value)
+			fail OperationNotAllowedError, 
+				"Operation not allowed for item of type #{@type}" unless @type == "file"
+			FileSystemCommon.validate_item_state(self)
+			@mime = value
+			@changed_properties[:mime] = value
+		end
+	
+		def application_data
+			if @application_data
+				Marshal.load( Marshal.dump(@application_data) )
+			else
+				{}
+			end
+		end
+
+		def application_data=(hash={})
+			FileSystemCommon.validate_item_state(self)
+			if @application_data 
+					@application_data.merge!(hash)
+			else
+					@application_data = hash.dup
+			end
+				@changed_properties[:application_data].merge!(hash)
+		end
 
 		# @param client [Client] restful Client instance
 		# @param parent [Item, String] default: ("/") parent folder item or url
@@ -122,8 +208,8 @@ module Bitcasa
 		# @option properties [String] :mime (nil) applicable to item type file only
 		# @option properties [String] :blocklist_key (nil) applicable to item type file only
 		# @option properties [String] :blocklist_id (nil) applicable to item type file only
-		# @option properties [Fixnum] :size (nil) applicable to item type file only
-		# @option properties [Hash] :application_data ({ }) extra metadata of item
+		# @option properties [Fixnum] :size (nil) applicable to item of type file only
+		# @option properties [Hash] :application_data ({}) extra metadata of item
 		# @raise [Client::Errors::ArgumentError]
 		def initialize(client, parent: nil, in_trash: false, 
 				in_share: false, old_version: false, **properties)
@@ -199,64 +285,7 @@ module Bitcasa
 			@changed_properties = {application_data: {}}
 		end
 		
-		# see #name
-		def name=(value)
-			FileSystemCommon.validate_item_state(self)
-			@name = value
-			@changed_properties[:name] = value
-		end
-		
-		# @see #extension
-		def extension=(value)
-			fail OperationNotAllowedError, 
-				"Operation not allowed for item of type #{@type}" unless @type == "file"
-			FileSystemCommon.validate_item_state(self)
-			@extension = value
-			@changed_properties[:extension] = value
-		end
-	
-		# @see #date_created
-		def date_created=(value)
-			FileSystemCommon.validate_item_state(self)
-			@date_created = value
-			@changed_properties[:date_created] = value
-		end
-
-		# @see #date_meta_last_modified
-		def date_meta_last_modified=(value)
-			FileSystemCommon.validate_item_state(self)
-			@date_meta_last_modified = value
-			@changed_properties[:date_meta_last_modified] = value
-		end
-
-		# @see #date_content_last_modified
-		def date_content_last_modified=(value)
-			FileSystemCommon.validate_item_state(self)
-			@date_content_last_modified = value
-			@changed_properties[:date_content_last_modified] = value
-		end
-
-		# see #mime
-		def mime=(value)
-			fail OperationNotAllowedError, 
-				"Operation not allowed for item of type #{@type}" unless @type == "file"
-			FileSystemCommon.validate_item_state(self)
-			@mime = value
-			@changed_properties[:mime] = value
-		end
-	
-		#	@see #application_data
-		# @todo support update of nested hash, currently overwrites nested hash	
-		def application_data=(hash={})
-			FileSystemCommon.validate_item_state(self)
-			if @application_data 
-					@application_data.merge!(hash)
-			else
-					@application_data = hash.dup
-			end
-				@changed_properties[:application_data].merge!(hash)
-		end
-		
+				
 		# Move this item to destination folder
 		# @note	Updates this item and it's refrence is returned.
 		# @note Locally changed properties get discarded
@@ -267,14 +296,15 @@ module Bitcasa
 		#		action to take in case of a conflict with an existing folder, default 'RENAME'
 		#
 		# @return [Item] returns self
-		# @raise [Client::Errors::ServiceError, Client::Errors::ArgumentError, 
-		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
+		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
+		#		Client::Errors::OperationNotAllowedError]
 		def move_to(destination, name: nil, exists: 'RENAME')
 			FileSystemCommon.validate_item_state(self)
 			FileSystemCommon.validate_item_state(destination)
 	
 			destination_url = FileSystemCommon.get_folder_url(destination)	
-			name = @name unless name
+			name ||= @name
 		
 			if @type == "folder"
 				response = @client.move_folder(@url, destination_url, name, exists: exists)
@@ -294,8 +324,10 @@ module Bitcasa
 		# @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME') 
 		#		action to take in case of a conflict with an existing folder, default 'RENAME'
 		# @return [Item] new instance of copied item
-		# @raise [Client::Errors::ServiceError, Client::Errors::ArgumentError, 
-		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
+		#
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
+		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
+		#		Client::Errors::OperationNotAllowedError]
 		def copy_to(destination, name: nil, exists: 'RENAME')
 			FileSystemCommon.validate_item_state(self)
 			FileSystemCommon.validate_item_state(destination)
@@ -326,8 +358,8 @@ module Bitcasa
 		#		method suppresses exceptions and returns false if set to false, 
 		#			added so that consuming application can control behaviour
 		#
-		# @return [Boolean] true/false
-		# @raise [Client::Errors::ServiceError, Client::Errors::ArgumentError, 
+		# @return [Boolean] whether operation is successful
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
 		#		if raise_exception is true
 		def delete(force: false, commit: false, raise_exception: false)
@@ -359,7 +391,7 @@ module Bitcasa
 			end	
 				changed_properties_reset	
 			true
-			rescue Client::Errors::ServiceError, 
+			rescue Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 				Client::Errors::OperationNotAllowedError, Client::Errors::InvalidItemError
 				raise $! if raise_exception == true
 				false
@@ -367,26 +399,8 @@ module Bitcasa
 		
 		# Get this item's properties from server
 		# @return [Hash] metadata of this item
-		# @raise [Client::Errors::ServiceError]
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError]
 		def get_properties_from_server
-			if @in_trash == true
-				response = @client.browse_trash(path: @url)
-				properties = response.fetch(:meta)
-			elsif @type == "folder"
-				properties = @client.get_folder_meta(@url)
-			else
-				properties = @client.get_file_meta(@url)
-			end
-			properties
-		end
-
-		# Refresh this item's properties from server
-		#	@note	Locally changed properties get discarded
-		# @return [Item] returns self
-		# @raise [Client::Errors::ServiceError, Client::Errors::InvalidItemError]
-		def refresh
-			FileSystemCommon.validate_item_state(self, in_trash: false, in_share: false)
-			
 			if @in_trash == true
 				properties = @client.browse_trash(path: @url).fetch(:meta)
 			elsif @type == "folder"
@@ -394,7 +408,19 @@ module Bitcasa
 			else
 				properties = @client.get_file_meta(@url)
 			end
+		end
 
+		# Refresh this item's properties from server
+		#
+		#	@note	Locally changed properties get discarded
+		# @return [Item] returns self
+		#
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
+		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
+		def refresh
+			FileSystemCommon.validate_item_state(self, in_trash: false, in_share: false)
+		
+			properties = get_properties_from_server	
 			parent_url = ::File.dirname(@url)
 			set_item_properties(parent: parent_url, in_trash: @in_trash, 
 					in_share: @in_share, **properties)
@@ -414,7 +440,8 @@ module Bitcasa
 		# @param exists [String] ('FAIL', 'RESCUE', 'RECREATE') 
 		#		action to take if the recovery operation encounters issues, default 'FAIL'
 		#
-		# @raise [Client::Errors::ServiceError, Client::Errors::ArgumentError]
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
+		#		Client::Errors::ArgumentError]
 		def set_restored_item_properties(destination_url, exists)
 			begin
 				parent_url = @application_data[:_bitcasa_original_path]
@@ -439,11 +466,11 @@ module Bitcasa
 		end	
 
 		# Restore this item from trash
-		# @note This item's properties are updated if success
+		# @note This item's properties are updated if successful
 		#
 		# @param destination [Folder, String] ('RESCUE' (default root), 
-		#		RECREATE(named path)) path depending on exists option to place item into 
-		#		if the original path does not exist.
+		#		RECREATE(named path)) destination folder path depending on exists 
+		#		option to place item into if the original path does not exist.
 		# @param exists [String] ('FAIL', 'RESCUE', 'RECREATE') 
 		#		action to take if the recovery operation encounters issues, default 'FAIL'
 		# @param raise_exception [Boolean] (false)
@@ -451,13 +478,13 @@ module Bitcasa
 		#			added so that consuming application can control behaviour
 		# 
 		# @return [Boolean] true/false
-		# @raise [Client::Errors::ServiceError, Client::Errors::ArgumentError, 
-		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
-		#		if raise_exception is true
+		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
+		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
+		#		Client::Errors::OperationNotAllowedError] if raise_exception is true
 		#
 		# @note exist: 'RECREATE' with named path is expensive operation 
 		#		as items in named path hierarchy are traversed 
-		#		in order to fetch Restored item's propererties.
+		#		in order to fetch Restored item's properties.
 		# @example
 		#		item.restore
 		#		item.restore("/FOPqySw3ToK_25y-gagUfg", exists: 'RESCUE')
@@ -473,38 +500,48 @@ module Bitcasa
 			
 			set_restored_item_properties(destination_url, exists)
 			true
-			rescue Client::Errors::ServiceError, Client::Errors::ArgumentError, 
-				Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError
+			rescue Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
+				Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
+				Client::Errors::OperationNotAllowedError
 				raise $! if raise_exception == true
 				false
 		end
 
-		# List versions of this item if file
+		# List versions of this item if file. 
+		#	@note The list of files returned are mostly non-functional, 
+		#		though their meta-data is correct. 
 		#
-		# @return [Array<Item>] items
-		#	@raise [Client::Errors::ServiceError, Client::Errors::ArgumentError, 
+		# @param start_version [Fixnum] version number to begin listing file versions
+		# @param stop_version [Fixnum] version number from which to stop 
+		#		listing file versions
+		# @param limit [Fixnum] how many versions to list in the result set. 
+		#		It can be negative to list items prior to given start version
+		#
+		# @return [Array<Item>] listed versions
+		#	@raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
-		def versions
-			# @review confirm if versions should be allowed for items in trash, in share 
+		#	@review confirm if versions should be allowed for items in trash, in share 
+		def versions(start_version: 0, stop_version: nil, limit: 10)
 			FileSystemCommon.validate_item_state(self, in_trash: false, in_share: false)
 			fail OperationNotAllowedError, 
 				"Opertaion not allowed for item of type #{@type}" unless @type == "file"
 				
-			response = @client.list_file_versions(@url)
+			response = @client.list_file_versions(@url, start_version: start_version, 
+					stop_version: stop_version, limit: limit)
 			FileSystemCommon.create_items_from_hash_array(response, @client, 
 					parent: @url, in_share: @in_share, in_trash: @in_trash, old_version: true)
-	
 		end
 
-		# Save this item's current state to bitcasa
-		#		Locally saved properties are commited to item in user's account
+		# Save this item's current state.
+		#		Locally changed properties are commited to this item in user's account
 		#
 		# @param version_conflict [String] ('FAIL', 'IGNORE') action to take 
 		#		if the version on this item does not match the version on the server
 		# 
 		# @return [Item] returns self
-		#	@raise [Client::Errors::ServiceError, Client::Errors::ArgumentError, 
-		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
+		#	@raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
+		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
+		#		Client::Errors::OperationNotAllowedError]
 		def save(version_conflict: 'FAIL')
 			FileSystemCommon.validate_item_state(self)
 			return self if Client::Utils.is_blank?(@changed_properties)
@@ -542,10 +579,12 @@ module Bitcasa
 		# @return [void]
 		def set_url(parent)
 			parent_url = FileSystemCommon.get_folder_url(parent)
-			@url = parent_url == "/" ? "/#{@id}" : "#{parent_url}/#{@id}"
+#	@url = parent_url == "/" ? "/#{@id}" : "#{parent_url}/#{@id}"
+			@url = parent_url.nil? ? "#{@id}" : "#{parent_url}/#{@id}"
 		end
 	
 		private :set_item_properties, :changed_properties_reset, 
-			:set_restored_item_properties, :get_properties_in_hash, :set_url
+			:set_restored_item_properties, :get_properties_in_hash, :set_url,
+			:get_properties_from_server
 	end
 end

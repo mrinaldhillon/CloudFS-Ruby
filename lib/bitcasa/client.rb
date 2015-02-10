@@ -1,3 +1,4 @@
+require_relative 'version'
 require_relative 'client/connection'
 require_relative 'client/constants'
 require_relative 'client/utils'
@@ -7,40 +8,42 @@ module Bitcasa
 	# Provides low level mapping apis to Bitcasa Cloudfs Service
 	#
 	#	@author Mrinal Dhillon
-	#	Maintains an instance of, Client::Connection class, 
+	#	Maintains an instance of RESTful {Client::Connection}, 
 	#		since Client::Connection instance is MT-safe 
 	#		and can be called from several threads without synchronization 
 	#		after setting up an instance, same behaviour is expected from Client class. 
-	#		Should use single instance for all calls per server accross 
+	#		Should use single instance for all calls per remote server accross 
 	#		multiple threads for performance.
 	#
+	#	@note
+	#		path, destination as input parameter expects absolute path (url) of
+	#		object in end-user's account.
 	#
 	# @example
 	#		Authenticate
 	#		client = Bitcasa::Client.new(clientid, secret, host)
-	#		client.authenticate('testuser', 'password')
+	#		client.authenticate(username, password)
 	#		client.ping
 	#	@example Upload file
-	#		::File.open("/tmp/xyz", "r") do |file|
-	#			client.upload(url, file, 
+	#		::File.open(local_file_path, "r") do |file|
+	#			client.upload(path, file, 
 	#					name: 'somename', exists: 'FAIL')
 	#		end
 	#	@example Download file
 	#		Download into buffer
-	#		buffer = client.download("pathid", startbyte: 0, bytecount: 1000)
+	#		buffer = client.download(path, startbyte: 0, bytecount: 1000)
 	#
 	#		Streaming download i.e. chunks are synchronously returned as soon as available
 	#			preferable for large files download:
 	#
 	#		::File.open(local_filepath, 'wb') do |file|
-	#				client.download(url) { |buffer| file.write(buffer) }
+	#				client.download(path) { |buffer| file.write(buffer) }
 	#		end
 	#	
 	# @optimize Support async requests, 
 	#		blocker methods like wait for async operations,
 	#		chunked/streaming upload i.e. chunked upload(not sure if server supports), 
-	#		StringIO, String upload,
-	# 	debug
+	#		StringIO, String upload, debug
 	class Client
 
 		# Creates Client instance that manages rest api calls to Bitcasa Cloud
@@ -48,10 +51,20 @@ module Bitcasa
 		# @param clientid [String] application clientid
 		# @param secret [String] application secret
 		# @param host [String] server address
-		# @optimize timeout options
+		#	@param [Hash] params RESTful connection configurations
+		#	@option params [Fixnum] :connect_timeout (60) for server handshake
+		#	@option params [Fixnum] :send_timeout (0) for send request, 
+		#		default is set to never, in order to support large uploads 
+		#	@option params [Fixnum] :receive_timeout (120) for read timeout per block 
+		#	@option params [Fixnum] :max_retry (3) for http 500 level errors
+		#	@option params [#<<] :http_debug (nil) to enable http debugging, 
+		#		example STDERR, STDOUT, {::File} object opened with permissions to write
+		#
+		#	@raise [Errors::ArgumentError]	
 		# @optimize provide option to load credentials 
 		#		and http connection related configuration from config file, env
-		def initialize(clientid, secret, host)
+		# @review optimum default values for send and receive timeouts 
+		def initialize(clientid, secret, host, **params)
 			fail Errors::ArgumentError, 
 				"Invalid argument provided" if ( Utils.is_blank?(clientid) || 
 						Utils.is_blank?(secret) || Utils.is_blank?(host) )
@@ -60,36 +73,34 @@ module Bitcasa
 			@secret = "#{secret}"
 			@host = /https:\/\// =~ host ? "#{host}" : 
 					"#{Constants::URI_PREFIX_HTTPS}#{host}"
-
 			@access_token = nil
-			# @review setting send and recieve timeout to never in order to support 
-			#		large file uploads and downloads
-			@http_connection = Connection.new(connect_timeout: 60, 
-					send_timeout: 0, receive_timeout: 0)
+
+			connect_timeout, send_timeout, receive_timeout, max_retries, http_debug = 
+						params.values_at(:connect_timeout, :send_timeout, :receive_timeout, 
+								:max_retries, :http_debug)
+			connect_timeout ||= 60
+			send_timeout ||= 0
+			receive_timeout ||= 120
+			max_retries ||= 3
+
+			@http_connection = Connection.new(connect_timeout: connect_timeout, 
+					send_timeout: send_timeout, receive_timeout: receive_timeout, 
+					max_retries: max_retries, debug_dev: http_debug,
+					agent_name: "#{Constants::HTTP_AGENT_NAME} (#{Bitcasa::VERSION})") 
 		end
 
-		# Checks if Client can make authenticated requests to Bitcasa
-		# @return [Boolean] (true, false)
-		def is_linked?
-			linked?
-		end
-		
-		# Checks if Client can make authenticated requests to Bitcasa
-		# @return [Boolean] (true, false)
+		# @return [Boolean] whether client can make authenticated 
+		#		requests to bitcasa service
+		# @raise [Errors::ServiceError]
 		def linked?
-			if Utils.is_blank?(@access_token)
-				false
-			else
-				ping
-				true
-			end
-			rescue Errors::ServiceError
+			ping
+			true
+			rescue Errors::SessionNotLinked
 				false
 		end
 
 		# Unlinks this client object from bitcasa user's account
 		# @note this will disconnect all keep alive connections and internal sessions
-		# @return [true]
 		def unlink
 			if @access_token
 				@access_token = ''
@@ -97,11 +108,11 @@ module Bitcasa
 			end
 			true
 		end
-		
-		# Obtains an oauth2 access token end user for an particular client 
-		# @param username [String] username of the user
-		# @param password [String] password of the user
-    # @return [true]
+
+		#	Obtains an OAuth2 access token that authenticates an end-user for this client
+		# @param username [String] username of the end-user
+		# @param password [String] password of the end-user
+		# @return [true]
 		# @raise [Errors::ServiceError, Errors::ArgumentError]
 		def authenticate(username, password)
 			fail Errors::ArgumentError, 
@@ -135,7 +146,7 @@ module Bitcasa
 
 		# Ping bitcasa server to verifies the end-user’s access token
 		# @return [true]
-		# @raise [Errors::ServiceError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError]
 		def ping
 			request('GET', uri: { endpoint: Constants::ENDPOINT_PING }, 
 				 	header: Constants::HEADER_CONTENT_TYPE_APP_URLENCODED)
@@ -147,10 +158,10 @@ module Bitcasa
 		# @param username [String] username of the end-user.
 		# @param password [String] password of the end-user.
 		# @param email [String] email of the end-user
-		# @param first_name [String] first name of end user
-		# @param last_name [String] last name of end user
+		# @param first_name [String] first name of the end-user
+		# @param last_name [String] last name of the end-user
 		#
-		# @return [Hash] user's profile information
+		# @return [Hash] end-user's attributes
 		# @raise [Errors::ServiceError, Errors::ArgumentError]
 		def create_account(username, password, email: nil, 
 				first_name: nil, last_name: nil)
@@ -185,10 +196,10 @@ module Bitcasa
 			request('POST', uri: uri, header: headers,	body: form)
 		end	
 
-		# Get bitcasa user profile information
+		# Get bitcasa end-user profile information
 		#
-		# @return [Hash] user information
-		# @raise [Errors::ServiceError]
+		# @return [Hash] account metadata for the authenticated user		
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError]
 		def get_profile
 			uri = { endpoint: Constants::ENDPOINT_USER_PROFILE }
 			
@@ -196,66 +207,64 @@ module Bitcasa
 					header: Constants::HEADER_CONTENT_TYPE_APP_URLENCODED)
 		end
 
-		# Create folder
+		# Create folder at specified destination path in end-user's account
 		#
 		# @param name [Sting] name of folder to create
-		#	@param path [String] absolute path of parent, default root
-		# @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME', 'REUSE') defaults 'FAIL'
+		#	@param path [String] default: root, absolute path to destination folder
+		# @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME', 'REUSE')
 		#
 		# @return [Hash] metadata of created folder
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
+		# @review why this api returns an array of items
 		def create_folder(name, path: nil, exists: 'FAIL')
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass name" if Utils.is_blank?(name)
 			exists = Constants::EXISTS.fetch(exists.to_sym) { 
-				raise Errors::ArgumentError, "Invalid value for exists" }
+				fail Errors::ArgumentError, "Invalid value for exists" }
 		
 			uri = set_uri_params(Constants::ENDPOINT_FOLDERS, name: path)
 			query = { operation: Constants::QUERY_OPS_CREATE }
 			form = {name: name, exists: exists}
 
 			response = request('POST', uri: uri, query: query, body: form)
-			# @review why this function returns an array of items
 			items = response.fetch(:items)
 			items.first
 		end
-
-		# List folder
-		#
-		# @param path [String] folder path to list, defults root folder
-		# @param depth [Fixnum] levels to recurse, default 0 ie. infinite depth 
+		
+		# @param path [String] defaults: root, folder path to list
+		# @param depth [Fixnum] default: nil, levels to recurse, 0 - infinite depth 
 		# @param filter [String]
-		# @param strict_traverse [Boolean] traversal based on success of filters and possibly the depth parameters, default false
+		# @param strict_traverse [Boolean] traversal based on success of filters 
+		#		and possibly the depth parameters
 		#
-	 	# @return [<Hash>] contains metadata of items under listed folder
-		# @raise [Errors::ServiceError Errors::ArgumentError]
-		# @todo accept filter array 
-		def list_folder(path: nil, depth: 0, filter: nil, strict_traverse: false)
+		# @return [Array<Hash>] metadata of files and folders under listed folder
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
+		#	@todo accept filter array, return { meta: Hash, items: Array<Hash> }
+		def list_folder(path: nil, depth: nil, filter: nil, strict_traverse: false)
 			fail Errors::ArgumentError, 
 				"Invalid argument must pass strict_traverse of type boolean" unless !!strict_traverse == strict_traverse
 
 			uri = set_uri_params(Constants::ENDPOINT_FOLDERS, name: path)
-			query = { depth: depth }
-
+			query = {}
+			query = { depth: depth } if depth
 			unless Utils.is_blank?(filter)
 				query[:filter] = filter
 				query[:'strict-traverse'] = "#{strict_traverse}"
 			end
 
 			response = request('GET', uri: uri, query: query)
-			# @todo return { meta: [Hash], items: [<Hash>] }
 			response.fetch(:items)
 		end
 
 		# Delete folder
 		#
 		# @param path [String] folder path
-		# @param commit [Boolean] default false, 
+		# @param commit [Boolean]
 		#		set true to remove folder permanently, else will be moved to trash  
-		# @param force [Boolean] default false, set true to delete non-empty folder 
+		# @param force [Boolean] set true to delete non-empty folder 
 		#
 		# @return [Hash] hash with key for success and deleted folder's last version
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def delete_folder(path, commit: false, force: false)
 				delete(Constants::ENDPOINT_FOLDERS, path, commit: commit, force: force)
 		end
@@ -263,11 +272,11 @@ module Bitcasa
 		# Delete file
 		#
 		# @param path [String] file path
-		# @param commit [Boolean] default false, 
+		# @param commit [Boolean]
 		#		set true to remove file permanently, else will be moved to trash  
 		#
 		# @return [Hash] hash with key for success and deleted file's last version
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def delete_file(path, commit: false)
 				delete(Constants::ENDPOINT_FILES, path, commit: commit)
 		end
@@ -276,12 +285,12 @@ module Bitcasa
 		#
 		# @param endpoint [String] Bitcasa endpoint for file/folder
 		# @param path [String] file/folder path
-		# @param commit [Boolean] default false, 
+		# @param commit [Boolean] 
 		#		set true to remove file/folder permanently, else will be moved to trash  
-		# @param force [Boolean] default false, set true to delete non-empty folder 
+		# @param force [Boolean] set true to delete non-empty folder 
 		#
 		# @return [Hash] hash with key for success and deleted file/folder's last version
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def delete(endpoint, path, commit: false, force: false)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass endpoint" if Utils.is_blank?(endpoint)
@@ -299,30 +308,32 @@ module Bitcasa
 			request('DELETE', uri: uri, query: query)
 		end
 		
-		#	Copy folder
+		#	Copy folder to specified destination folder
 		#
 		# @param path [String] source folder path
 		# @param destination [String] destination folder path
-		# @param name [String] name of copied folder
+		# @param name [String] new name of copied folder
 		# @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME') 
-		#		action to take in case of a conflict with an existing folder, default 'FAIL'
+		#		action to take in case of a conflict with an existing folder
+		#		An unused integer is appended to folder name if exists: RENAME
 		#
 		# @return [Hash] metadata of new folder
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def copy_folder(path, destination, name, exists: 'FAIL')
 			copy(Constants::ENDPOINT_FOLDERS, path, destination, name, exists: exists)
 		end
 		
-		#	Copy file
+		#	Copy file to specified destination folder
 		#
 		# @param path [String] source file path
 		# @param destination [String] destination folder path
-		# @param name [String] name of copied file
+		# @param name [String] new name of copied file
 		# @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME') 
-		#		action to take in case of a conflict with an existing file, default 'RENAME'
+		#		action to take in case of a conflict with an existing file
+		#		An unused integer is appended to file name if exists: RENAME
 		#
 		# @return [Hash] metadata of new file
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def copy_file(path, destination, name, exists: 'RENAME')
 			copy(Constants::ENDPOINT_FILES, path, destination, name, exists: exists)
 		end
@@ -335,16 +346,17 @@ module Bitcasa
 		# @param name [String] name of copied folder/file, 
 		#		default is source folder/file's name
 		# @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME') 
-		#		action to take in case of a conflict with an existing folder/file, default FAIL
+		#		action to take in case of a conflict with an existing folder/file
+		#		An unused integer is appended to folder/file name if exists: RENAME
 		#
 		# @return [Hash] metadata of new folder/file
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def copy(endpoint, path, destination, name, exists: 'FAIL')
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid path" if Utils.is_blank?(path)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid name" if Utils.is_blank?(name)
-		fail Errors::ArgumentError, 
+			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid destination" if Utils.is_blank?(destination)
 			exists = Constants::EXISTS.fetch(exists.to_sym) { 
 				raise Errors::ArgumentError, "Invalid value for exists" }
@@ -352,36 +364,38 @@ module Bitcasa
 			destination = prepend_path_with_forward_slash(destination)
 			uri = set_uri_params(endpoint, name: path)
 			query = { operation: Constants::QUERY_OPS_COPY }
-			form = {to: destination , exists: exists, name: name}
+			form = {to: destination, name: name, exists: exists}
 
 			response = request('POST', uri: uri, query: query, body: form)
 			response.fetch(:meta, response)
 		end
 
-		#	Move folder
+		#	Move folder to specified destination folder
 		#
 		# @param path [String] source folder path
 		# @param destination [String] destination folder path
-		# @param name [String] name of moved folder
+		# @param name [String] new name of moved folder
 		# @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME') 
-		#		action to take in case of a conflict with an existing folder, default 'RENAME'
+		#		action to take in case of a conflict with an existing folder
+		#		An unused integer is appended to folder name if exists: RENAME
 		#
 		# @return [Hash] metadata of moved folder
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def move_folder(path, destination, name, exists: 'FAIL')
 			move(Constants::ENDPOINT_FOLDERS, path, destination, name, exists: exists)
 		end
 	
-		#	Move file
+		#	Move file to specified destination folder
 		#
 		# @param path [String] source file path
 		# @param destination [String] destination folder path
 		# @param name [String] name of moved file
 		# @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME') 
-		#		action to take in case of a conflict with an existing folder, default 'RENAME'
+		#		action to take in case of a conflict with an existing file
+		#		An unused integer is appended to file name if exists: RENAME
 		#
 		# @return [Hash] metadata of moved file
-		# @raise Errors::ServiceError, Errors::ArgumentError
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def move_file(path, destination, name, exists: 'RENAME')
 			move(Constants::ENDPOINT_FILES, path, destination, name, exists: exists)
 		end
@@ -393,11 +407,13 @@ module Bitcasa
 		# @param destination [String] destination folder path
 		# @param name [String] name of moved folder/file
 		# @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME') 
-		#		action to take in case of a conflict with an existing folder, default 'FAIL'
+		#		action to take in case of a conflict with an existing folder/file
+		#		An unused integer is appended to folder/file name if exists: RENAME
 		#
 		# @return [Hash] metadata of moved folder/file
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
-		# @review according bitcasa rest docs, path default is root i.e. root is moved!
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
+		# @review according bitcasa rest api docs of move folder, 
+		#		path default is root i.e. root is moved!
 		def move(endpoint, path, destination, name, exists: 'FAIL')
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid path" if Utils.is_blank?(path)
@@ -408,6 +424,7 @@ module Bitcasa
 			exists = Constants::EXISTS.fetch(exists.to_sym) { 
 				fail Errors::ArgumentError, "Invalid value for exists" }
 
+			destination = prepend_path_with_forward_slash(destination)
 			uri = set_uri_params(endpoint, name: path)
 			query = { operation: Constants::QUERY_OPS_MOVE }
 			form = { to: destination, exists: exists, name: name}
@@ -421,7 +438,7 @@ module Bitcasa
 		# @param path [String] folder path
 		#
 		# @return [Hash] metadata of folder
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def get_folder_meta(path)
 				get_meta(Constants::ENDPOINT_FOLDERS, path)
 		end
@@ -431,7 +448,7 @@ module Bitcasa
 		# @param path [String] file path
 		#
 		# @return [Hash] metadata of file
-		# @raise Errors::ServiceError, Errors::ArgumentError
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def get_file_meta(path)
 				get_meta(Constants::ENDPOINT_FILES, path)
 		end
@@ -442,7 +459,7 @@ module Bitcasa
 		# @param path [String] file/folder path
 		#
 		# @return [Hash] metadata of file/folder
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def get_meta(endpoint, path)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid path" if Utils.is_blank?(path)
@@ -456,10 +473,11 @@ module Bitcasa
 		# Alter folder metadata
 		#
 		# @param path [String] folder path
-		# @param version [String, Fixnum] version number of folder
+		# @param version [Fixnum] version number of folder
 		# @param version_conflict [String] ('FAIL', 'IGNORE') action to take 
 		#		if the version on the client does not match the version on the server
 		#
+		#	@param [Hash] properties
 		# @option properties [String] :name (nil) new name
 		# @option properties [Fixnum] :date_created (nil) timestamp
 		# @option properties [Fixnum] :date_meta_last_modified (nil) timestamp
@@ -468,7 +486,7 @@ module Bitcasa
 		#		with existing application data
 		#
 		# @return [Hash] updated metadata of folder
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def alter_folder_meta(path, version, version_conflict: 'FAIL', **properties)
 			alter_meta(Constants::ENDPOINT_FOLDERS, path, version, 
 					version_conflict: version_conflict, **properties)
@@ -477,10 +495,11 @@ module Bitcasa
 		# Alter file metadata
 		#
 		# @param path [String] file path
-		# @param version [String, Fixnum] version number of file
+		# @param version [Fixnum] version number of file
 		# @param version_conflict [String] ('FAIL', 'IGNORE') action to take 
-		#		if the version on the client does not match the version on the server
+		#		if the version on client does not match the version on server
 		#
+		#	@param [Hash] properties
 		# @option properties [String] :name (nil) new name
 		# @option properties [Fixnum] :date_created (nil) timestamp
 		# @option properties [Fixnum] :date_meta_last_modified (nil) timestamp
@@ -489,7 +508,7 @@ module Bitcasa
 		#		with existing application data
 		#
 		# @return [Hash] updated metadata of file
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def alter_file_meta(path, version, version_conflict: 'FAIL', **properties)
 			alter_meta(Constants::ENDPOINT_FILES, path, version, 
 					version_conflict: version_conflict, **properties)
@@ -503,6 +522,7 @@ module Bitcasa
 		# @param version_conflict [String] ('FAIL', 'IGNORE') action to take 
 		#		if the version on the client does not match the version on the server
 		#
+		#	@param [Hash] properties
 		# @option properties [String] :name (nil) new name
 		# @option properties [Fixnum] :date_created (nil) timestamp
 		# @option properties [Fixnum] :date_meta_last_modified (nil) timestamp
@@ -511,7 +531,8 @@ module Bitcasa
 		#		with existing application data
 		#
 		# @return [Hash] updated metadata of file/folder
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
+		# @review does not suppress multi_json exception for application data
 		def alter_meta(endpoint, path, version, version_conflict: 'FAIL', **properties)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass path" if Utils.is_blank?(path)
@@ -524,7 +545,6 @@ module Bitcasa
 			req_properties = {}
 			req_properties = properties.dup unless properties.empty?
 			application_data = req_properties[:application_data]
-			# @review suppress multi_json exception and continue or fail
 			req_properties[:application_data] = 
 				Utils.hash_to_json(application_data) unless Utils.is_blank?(application_data)
 			req_properties[:'version'] = "#{version}"
@@ -535,53 +555,84 @@ module Bitcasa
 		end
 
 		# Upload file
-		#			file pointer points to eof after upload is completed
 		# @param path [String] path to upload file to 
-		# @param file [::File] opened file
-		# @param name [String] name of uploaded file, default basename of filepath
+		# @param source [#read&#pos&#pos=, String] any object that 
+		#		responds to first set of methods or is an in-memory string
+		# @param name [String] name of uploaded file, must be set 
+		#		if source does not respond to #path
 		# @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME', 'REUSE') 
 		#		action to take if the filename of the file being uploaded conflicts 
 		#		with an existing file
 		#
 		# @return [Hash] metadata of uploaded file
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
-		# @example:
-		# 		::File.open("/tmp/xyz", "r") do |file|
-		#				client.upload("pathid", file, name: 'testfile')
-		#				file.rewind
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
+		# @example
+		#		Upload file
+		# 		::File.open(local_file_path, "r") do |file|
+		#				client.upload(path, file, name: "testfile.txt")
 		#			end
+		#	@example
+		#		Upload string
+		#			client.upload(path, "This is upload string", name: 'testfile.txt')
+		#		Upload stream
+		#			io = StringIO.new
+		#			io.write("this is test stringio")
+		#			client.upload(path, io, name: 'testfile.txt')
+		#			io.close
+		#	@note	name must be set if source does not respond to #path
 		# @todo reuse fallback and reuse attributes
-		# @review should file#rewind be called at end of this function
-		def upload(path, file, name: nil, exists: 'FAIL')
-			fail Errors::ArgumentError, 
-				"Invalid argument, must pass path" if Utils.is_blank?(path)
+		def upload(path, source, name: nil, exists: 'FAIL')
 			exists = Constants::EXISTS.fetch(exists.to_sym) { 
 				fail Errors::ArgumentError, "Invalid value for exists" }
-			fail Errors::ArgumentError, 
-				"Invalid argument, must pass ::File type object" unless(file.kind_of?(::File))
+
+			if source.respond_to?(:path)
+						name ||= ::File.basename(source.path)
+			elsif Utils.is_blank?(name)
+				fail Errors::ArgumentError, "Invalid argument, custom name is required if source does not respond to path"
+			end
+
+			if source.respond_to?(:pos) && source.respond_to?(:pos=)
+				original_pos = source.pos
+				# Setting source offset to start of stream
+				source.pos=0
+			end
 
 			uri = set_uri_params(Constants::ENDPOINT_FILES, name: path) 
-			form = {file: file, exists: exists}
-			form[:name] = name unless Utils.is_blank?(name)
+			form = {file: source, exists: exists}
+			form[:name] = name
 			
 			headers = {
 				Constants::HEADER_CONTENT_TYPE => 
 					Constants::CONTENT_TYPE_MULTI 
 			}	
-
-			request('POST', uri: uri, header: headers,	body: form)
+			begin
+				request('POST', uri: uri, header: headers,	body: form)
+			ensure
+				# Reset source offset to original position
+				source.pos=original_pos if source.respond_to?(:pos=)
+			end
 		end
 
 		# Download file
 		#
-		# @param path [String] file path to download
+		# @param path [String] path of file in end-user's account
 		# @param startbyte [Fixnum] starting byte (offset) in file
-		# @param bytecount [Fixnum] number of bytes to dowload
+		# @param bytecount [Fixnum] number of bytes to download
 		#
 		# @yield [String] chunk of data as soon as available, 
 		#		chunksize size may vary each time
 		# @return [String] file data is returned if no block given
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
+		#	@example
+		#		Download into buffer
+		#		buffer = client.download(path, startbyte: 0, bytecount: 1000)
+		#
+		#		Streaming download i.e. chunks are synchronously returned as soon as available
+		#			preferable for large files download:
+		#
+		#		::File.open(local_filepath, 'wb') do |file|
+		#				client.download(path) { |buffer| file.write(buffer) }
+		#		end
 		def download(path, startbyte: 0, bytecount: 0, &block)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass path" if Utils.is_blank?(path)
@@ -602,15 +653,15 @@ module Bitcasa
 			request('GET', uri: uri, header: header, &block)
 		end
 
-		# List single version of file
+		# List specified version of file
 		#
 		# @param path [String] file path
 		# @param version [Fixnum] desired version of the file referenced by path
 		#
-		# @return [<Hash>] hashes representing metatdata passed version of file
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
-		# @review Bitcasa Server returns unspecified error 9999 
-		#		if current version of file is passed, works for pervious file versions.
+		# @return [Hash] metatdata passed version of file
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
+		# @review  If current version of file is passed, Bitcasa Server 
+		#		returns unspecified error 9999, works for pervious file versions.
 		def list_single_file_version(path, version)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid path" if Utils.is_blank?(path)
@@ -624,13 +675,14 @@ module Bitcasa
 					header:  Constants::HEADER_CONTENT_TYPE_APP_URLENCODED)
 		end
 	
-		# Promote file version
+		# Given a specified version, set that version’s metadata to 
+		#		current metadata for the file, creating a new version in the process
 		#
 		# @param path [String] file path
 		# @param version [Fixnum] version of file specified by path
 		#
-		# @return [Hash] metadata of promoted file
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @return [Hash] update metadata with new version number
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def promote_file_version(path, version)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid path" if Utils.is_blank?(path)
@@ -653,11 +705,11 @@ module Bitcasa
 		# @param limit [Fixnum] how many versions to list in the result set. 
 		#		It can be negative.
 		#
-		# @return [<Hash>] hashes representing metadata for selected versions 
+		# @return [Array<Hash>] hashes representing metadata for selected versions 
 		#		of the file as recorded in the History
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
-		# @review Returns empty items array if file has no more than current version
-		def list_file_versions(path, start_version: 0, stop_version: -1, limit: 10)
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
+		# @review Returns empty items array if file has no old version
+		def list_file_versions(path, start_version: 0, stop_version: nil, limit: 10)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid path" if Utils.is_blank?(path)
 			
@@ -667,24 +719,27 @@ module Bitcasa
 			query = {
 				:'start-version' => start_version, :'limit' => limit
 			}
-			query[:'stop-version'] = stop_version if stop_version > 0
+			query[:'stop-version'] = stop_version if stop_version
 			
 			request('GET', uri: uri, query: query,
 					header: Constants::HEADER_CONTENT_TYPE_APP_URLENCODED)
 		end
 	
-		# Create share
+		# Creates a share of locations specified by the passed list of paths
 		#
-		# @param paths [Array<String>] array of file/folder paths
+		# @param paths [Array<String>] array of file/folder paths in end-user's account
 		#
 		# @return [Hash] metadata of share
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
+		#	@review according to bitcasa rest doc: If the share points to a single item, 
+		#		only the share data is returned (not the item’s metadata).
+		#		Observed only share data retruned even when share points to multiple paths?
 		def create_share(paths)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid list of paths" if Utils.is_blank?(paths)
 		
 			body = Array(paths).map{ |path|
-				path = prepend_path_with_forward_slash(path)
+#				path = prepend_path_with_forward_slash(path)
 				"path=#{Utils.urlencode(path)}"}.join("&")
 			
 			uri = { endpoint: Constants::ENDPOINT_SHARES }
@@ -692,12 +747,12 @@ module Bitcasa
 			request('POST', uri: uri, body: body)
 		end
 
-		# Delete share
+		# Deletes the user created share
 		#
 		# @param share_key [String] id of the share to be deleted
 		#
 		# @return [Hash] hash containing success string
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def delete_share(share_key)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid share key" if Utils.is_blank?(share_key)
@@ -708,35 +763,30 @@ module Bitcasa
 					header:  Constants::HEADER_CONTENT_TYPE_APP_URLENCODED)
 		end
 	
-		# List a share	
+		# List files and folders in a share	
 		#
 		# @param share_key [String] id of the share
-		# @param path [String] path of item in share to list
+		# @param path [String] path to any folder in share, default is root of share
 		#
-		# @return [Hash] containes metadata of browsed path in share defaults share, 
+		# @return [Hash] metadata of browsed path in share defaults share, 
 		#		share's metadata and array of hashes representing list of items 
-		#		under browsed item if folder - { :meta => Hash, share: Hash :items => Array<Hash> }
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		#		under browsed item if folder - { :meta => Hash, share: Hash, :items => Array<Hash> }
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def browse_share(share_key, path: nil)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid path" if Utils.is_blank?(share_key)
-			
+
 			uri = set_uri_params(Constants::ENDPOINT_SHARES, 
 					name: "#{share_key}#{path}", operation: "meta")
 
-			response = request('GET', uri: uri,
+			request('GET', uri: uri,
 					header:  Constants::HEADER_CONTENT_TYPE_APP_URLENCODED)
-			
-			meta = response.fetch(:meta, {})
-			items = response.fetch(:items, [])
-			share = response.fetch(:share)
-			{ meta: meta, share: share, items: items}
 		end
 	
-		# List user's shares
+		# Lists the metadata of the shares the authenticated user has created 
 		#
-		# @return [<Hash>] hashes representing metatdata of user's shares
-		# @raise [Errors::ServiceError]
+		# @return [Array<Hash>] metatdata of user's shares
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError]
 		def list_shares
 			uri = { endpoint: Constants::ENDPOINT_SHARES }
 			
@@ -747,12 +797,11 @@ module Bitcasa
 		# Add contents of share to user's filesystem
 		#
 		# @param share_key [String] id of the share
-		# @param path [String] path in user's account to receive share at,
-		#		default is "/" root
-		# @param exists [String] ('RENAME', 'FAIL', 'OVERWRITE'], default is 'RENAME'
+		# @param path [String] default root, path in user's account to receive share at
+		# @param exists [String] ('RENAME', 'FAIL', 'OVERWRITE']
 		#
-		# @return [<Hash>] hashs representing metadata of items in share
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @return [Array<Hash>] metadata of files and folders in share
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def receive_share(share_key, path: nil, exists: 'RENAME')
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid share key" if Utils.is_blank?(share_key)
@@ -771,7 +820,7 @@ module Bitcasa
 		# @param share_key [String] id of the share
 		# @param password [String] password of share
 		#
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def unlock_share(share_key, password)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid path" if Utils.is_blank?(share_key)
@@ -786,7 +835,7 @@ module Bitcasa
 		end
 		
 		# Alter share info
-		# 	Changes, adds, or removes the share’s password or updates the name
+		# 	changes, adds, or removes the share’s password or updates the name
 		#
 		# @param share_key [String] id of the share whose attributes are to be changed
 		#	@param current_password [String] current password for this share,
@@ -794,8 +843,9 @@ module Bitcasa
 		# @param password [String] new password of share
 		# @param name [String] new name of share
 		#
-		# @return [Hash] metadata of share
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @return [Hash] updated metadata of share
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
+		#	@review remove password has not been tested
 		def alter_share_info(share_key, current_password: nil, 
 				password: nil, name: nil)
 			fail Errors::ArgumentError, 
@@ -811,55 +861,48 @@ module Bitcasa
 			request('POST', uri: uri, body: form)
 		end
 
-		# List history
-		# 	lists cloudfs actions history
+		# List the history of file, folder, and share actions
 		#
 		# @param start [Fixnum] version number to start listing historical actions from, 
 		#		default -10. It can be negative in order to get most recent actions.
 		# @param stop [Fixnum] version number to stop listing historical actions from (non-inclusive)
 		#
-		# @return [<Hash>] containing history items
-		# @raise [Errors::ServiceError]
-		def list_history(start: -10, stop: 0)
+		# @return [Array<Hash>] history items
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError]
+		def list_history(start: -10, stop: nil)
 			uri = { endpoint: Constants::ENDPOINT_HISTORY }
 			query = { start: start }
-			query[:stop] = stop unless stop == 0
+			query[:stop] = stop if stop
 			
 			request('GET', uri: uri, query: query,
 					header:  Constants::HEADER_CONTENT_TYPE_APP_URLENCODED)
 		end
 
-		# Browse trash
+		# List files and folders in trash at specified path
 		#
 		# @param path [String] path to location in user's trash, defaults to root of trash
 		#
-		# @return [Hash] containes metadata of browsed trash item 
+		# @return [Hash] metadata of browsed trash item 
 		#		and array of hashes representing list of items under browsed item if folder -
 		#		 { :meta => Hash, :items => <Hash> }
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError]
 		def browse_trash(path: nil)
 			uri = set_uri_params(Constants::ENDPOINT_TRASH, name: path)
-			
-			response = request('GET', uri: uri,
+			request('GET', uri: uri,
 					header:  Constants::HEADER_CONTENT_TYPE_APP_URLENCODED)
-		
-			meta = response.fetch(:meta, response)
-			items = response.fetch(:items, [])
-			{ meta: meta, items: items }
 		end
 
 		# Delete trash item
 		#
-		# @param path [String] path to location in user's trash, 
+		# @param path [String] default: trash root, path to location in user's trash, 
 		#		default all trash items are deleted
 		#
 		# @return [Hash] containing success: true
-		# @raise [Errors::ServiceError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError]
 		# @review Bitcasa Server returns Unspecified Error 9999 if no path provided, 
 		#		expected behaviour is to delete all items in trash
 		def delete_trash_item(path: nil)
 			uri = set_uri_params(Constants::ENDPOINT_TRASH, name: path)
-			
 			request('DELETE', uri: uri, 
 					header:  Constants::HEADER_CONTENT_TYPE_APP_URLENCODED)
 		end
@@ -867,14 +910,13 @@ module Bitcasa
 		# Recover trash item
 		#
 		# @param path [String] path to location in user's trash
-		#
 		# @param restore [String] ('FAIL', 'RESCUE', 'RECREATE') action to take 
 		#		if recovery operation encounters issues
 		# @param destination [String] rescue (default root) or recreate(named path) 
 		#		path depending on exists option to place item into if the original 
 		#		path does not exist
 		#
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		def recover_trash_item(path, restore: 'FAIL', destination: nil)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid path" if Utils.is_blank?(path)
@@ -913,7 +955,7 @@ module Bitcasa
 		#		body: "path=pathid&path=pathdid&path=pathid"
 		#
 		# @return [Hash, String] containing result from bitcasa sevice or file data
-		# @raise [Errors::ServiceError, Errors::ArgumentError]
+		# @raise [Errors::SessionNotLinked, Errors::ServiceError]
 		def request(method, uri: {}, header: {}, query: {}, body: {}, &block)
 			header = {
 				Constants::HEADER_AUTHORIZATION => "Bearer #{@access_token}"
@@ -921,9 +963,7 @@ module Bitcasa
 				
 			unless (uri[:endpoint] == Constants::ENDPOINT_OAUTH ||
 						uri[:endpoint] == Constants::ENDPOINT_CUSTOMERS) 
-				fail Errors::SessionNotLinked, 
-					"access token is not set, please authenticate" if Utils.is_blank?(
-							@access_token)
+				fail Errors::SessionNotLinked if Utils.is_blank?(@access_token)
 			end
 
 			url = create_url(@host, endpoint: uri[:endpoint], name: uri[:name])
@@ -937,7 +977,7 @@ module Bitcasa
 		
 		# Set multipart body for file upload
 		# @param body [Hash]
-		# @return [<Hash>] mutipart upload forms
+		# @return [Array<Hash>] mutipart upload forms
 		def set_multipart_upload_body(body={})
 			return body unless body.is_a?(Hash) && body.key?(:file)
 
@@ -945,8 +985,8 @@ module Bitcasa
 			exists = body[:exists]	
 			
 			if Utils.is_blank?(body[:name])
-				path = file.respond_to?(:path) ? file.path : nil
-				filename = (::File.basename(path) || '')
+				path = file.respond_to?(:path) ? file.path : ''
+				filename = ::File.basename(path)
 			else
 				filename = body[:name]
 			end
@@ -1015,7 +1055,7 @@ module Bitcasa
 		# @optimize clean this method
 		def set_uri_params(endpoint, name: nil, operation: nil)
 			uri = { endpoint: endpoint }
-			# @review removing new line and spaces from end and begining of name
+			# removing new line and spaces from end and begining of name
 			unless Utils.is_blank?(name)
 				name = name.strip
 				delim ||=	'/' unless name[-1] == '/'
