@@ -1,5 +1,5 @@
 require_relative 'user'
-module Bitcasa
+module CloudFS
 
 	# Account class defines properties of the end-user's CloudFS paid account
 	#
@@ -60,11 +60,11 @@ module Bitcasa
 			@properties[:locale]
 		end
 
-		# @param client [Client] bitcasa restful api object
+		# @param client [Client] cloudfs RESTful api object
 		# @param [Hash] properties metadata of account
 		def initialize(client, **properties)
 			fail Client::Errors::ArgumentError, 
-				"invalid client type #{client.class}, expected Bitcasa::Client" unless client.is_a?(Bitcasa::Client)
+				"invalid client type #{client.class}, expected CloudFS::Client" unless client.is_a?(CloudFS::Client)
 
 			@client = client
 			set_account_info(**properties)
@@ -74,13 +74,14 @@ module Bitcasa
 		# @review required parameters
 		def set_account_info(**properties)
 			@properties = properties
-			nil
 		end
 
 		# Refresh this user's account metadata from server
+		#	@return [Account] returns self
 		def refresh
 			response = @client.get_profile
 			set_account_info(**response)
+			self
 		end
 
 		private :set_account_info

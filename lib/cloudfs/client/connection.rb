@@ -2,7 +2,7 @@ require 'httpclient'
 require_relative 'utils'
 require_relative 'error'
 
-module Bitcasa
+module CloudFS
 	class Client
 		# Provides RESTful interface
 		#	

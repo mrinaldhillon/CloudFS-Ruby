@@ -4,8 +4,8 @@ require_relative 'client/constants'
 require_relative 'client/utils'
 require_relative 'client/error'
 
-module Bitcasa
-	# Provides low level mapping apis to Bitcasa Cloudfs Service
+module CloudFS
+	# Provides low level mapping apis to Bitcasa CloudFS Service
 	#
 	#	@author Mrinal Dhillon
 	#	Maintains an instance of RESTful {Client::Connection}, 
@@ -21,7 +21,7 @@ module Bitcasa
 	#
 	# @example
 	#		Authenticate
-	#		client = Bitcasa::Client.new(clientid, secret, host)
+	#		client = CloudFS::Client.new(clientid, secret, host)
 	#		client.authenticate(username, password)
 	#		client.ping
 	#	@example Upload file
@@ -46,7 +46,7 @@ module Bitcasa
 	#		StringIO, String upload, debug
 	class Client
 
-		# Creates Client instance that manages rest api calls to Bitcasa Cloud
+		# Creates Client instance that manages rest api calls to CloudFS service
 		#
 		# @param clientid [String] application clientid
 		# @param secret [String] application secret
@@ -61,9 +61,11 @@ module Bitcasa
 		#		example STDERR, STDOUT, {::File} object opened with permissions to write
 		#
 		#	@raise [Errors::ArgumentError]	
-		# @optimize provide option to load credentials 
-		#		and http connection related configuration from config file, env
-		# @review optimum default values for send and receive timeouts 
+		#	@optimize Configurable chunk size for chunked stream downloads,default is 16KB.
+		#		Configurable keep alive timeout for persistent connections in 
+		#		connection pool, default is 15 seconds.
+		#		Async api support
+		# @review optimum default values for send and receive timeouts
 		def initialize(clientid, secret, host, **params)
 			fail Errors::ArgumentError, 
 				"Invalid argument provided" if ( Utils.is_blank?(clientid) || 
@@ -86,11 +88,11 @@ module Bitcasa
 			@http_connection = Connection.new(connect_timeout: connect_timeout, 
 					send_timeout: send_timeout, receive_timeout: receive_timeout, 
 					max_retries: max_retries, debug_dev: http_debug,
-					agent_name: "#{Constants::HTTP_AGENT_NAME} (#{Bitcasa::VERSION})") 
+					agent_name: "#{Constants::HTTP_AGENT_NAME} (#{CloudFS::VERSION})") 
 		end
 
 		# @return [Boolean] whether client can make authenticated 
-		#		requests to bitcasa service
+		#		requests to cloudfs service
 		# @raise [Errors::ServiceError]
 		def linked?
 			ping
@@ -99,7 +101,7 @@ module Bitcasa
 				false
 		end
 
-		# Unlinks this client object from bitcasa user's account
+		# Unlinks this client object from cloudfs user's account
 		# @note this will disconnect all keep alive connections and internal sessions
 		def unlink
 			if @access_token
@@ -144,7 +146,7 @@ module Bitcasa
 			true
 		end
 
-		# Ping bitcasa server to verifies the end-user’s access token
+		# Ping cloudfs server to verifies the end-user’s access token
 		# @return [true]
 		# @raise [Errors::SessionNotLinked, Errors::ServiceError]
 		def ping
@@ -196,7 +198,7 @@ module Bitcasa
 			request('POST', uri: uri, header: headers,	body: form)
 		end	
 
-		# Get bitcasa end-user profile information
+		# Get cloudfs end-user profile information
 		#
 		# @return [Hash] account metadata for the authenticated user		
 		# @raise [Errors::SessionNotLinked, Errors::ServiceError]
@@ -283,7 +285,7 @@ module Bitcasa
 
 		# Delete private common method for file and folder
 		#
-		# @param endpoint [String] Bitcasa endpoint for file/folder
+		# @param endpoint [String] CloudFS endpoint for file/folder
 		# @param path [String] file/folder path
 		# @param commit [Boolean] 
 		#		set true to remove file/folder permanently, else will be moved to trash  
@@ -412,7 +414,7 @@ module Bitcasa
 		#
 		# @return [Hash] metadata of moved folder/file
 		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
-		# @review according bitcasa rest api docs of move folder, 
+		# @review according to cloudfs rest api docs of move folder, 
 		#		path default is root i.e. root is moved!
 		def move(endpoint, path, destination, name, exists: 'FAIL')
 			fail Errors::ArgumentError, 
@@ -660,7 +662,7 @@ module Bitcasa
 		#
 		# @return [Hash] metatdata passed version of file
 		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
-		# @review  If current version of file is passed, Bitcasa Server 
+		# @review  If current version of file is passed, CloudFS Server 
 		#		returns unspecified error 9999, works for pervious file versions.
 		def list_single_file_version(path, version)
 			fail Errors::ArgumentError, 
@@ -731,15 +733,15 @@ module Bitcasa
 		#
 		# @return [Hash] metadata of share
 		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
-		#	@review according to bitcasa rest doc: If the share points to a single item, 
+		#	@review according to cloudfs rest doc: If the share points to a single item, 
 		#		only the share data is returned (not the item’s metadata).
-		#		Observed only share data retruned even when share points to multiple paths?
+		#		Observed only share data returned even when share points to multiple paths?
 		def create_share(paths)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid list of paths" if Utils.is_blank?(paths)
 		
 			body = Array(paths).map{ |path|
-#				path = prepend_path_with_forward_slash(path)
+				path = prepend_path_with_forward_slash(path)
 				"path=#{Utils.urlencode(path)}"}.join("&")
 			
 			uri = { endpoint: Constants::ENDPOINT_SHARES }
@@ -899,7 +901,7 @@ module Bitcasa
 		#
 		# @return [Hash] containing success: true
 		# @raise [Errors::SessionNotLinked, Errors::ServiceError]
-		# @review Bitcasa Server returns Unspecified Error 9999 if no path provided, 
+		# @review CloudFS Server returns Unspecified Error 9999 if no path provided, 
 		#		expected behaviour is to delete all items in trash
 		def delete_trash_item(path: nil)
 			uri = set_uri_params(Constants::ENDPOINT_TRASH, name: path)
@@ -941,7 +943,7 @@ module Bitcasa
 			request('POST', uri: uri, body: form)
 		end
 
-		# Request common method to send http request to bitcasa service
+		# Common private method to send http request to cloudfs service
 		#
 		# @param method [String, Symbol] ('GET', 'POST', 'DELETE') http verb
 		#
@@ -954,7 +956,7 @@ module Bitcasa
 		#		body: { :file => (File,StringIO), :name => "name" }
 		#		body: "path=pathid&path=pathdid&path=pathid"
 		#
-		# @return [Hash, String] containing result from bitcasa sevice or file data
+		# @return [Hash, String] containing result from cloudfs sevice or file data
 		# @raise [Errors::SessionNotLinked, Errors::ServiceError]
 		def request(method, uri: {}, header: {}, query: {}, body: {}, &block)
 			header = {
@@ -1014,12 +1016,12 @@ module Bitcasa
 		end
 
 		# Create response
-		#		parses bitcasa service response into hash
+		#		parses cloudfs service response into hash
 		#
 		# @param response [Hash]
-		#		@see Bitcasa::Client::Connection#request
+		#		@see CloudFS::Client::Connection#request
 		#
-		# @return [Hash] response from bitcasa service
+		# @return [Hash] response from cloudfs service
 		def parse_response(response)
 			if response[:content_type] && 
 				response[:content_type].include?("application/json")
@@ -1055,13 +1057,14 @@ module Bitcasa
 		# @optimize clean this method
 		def set_uri_params(endpoint, name: nil, operation: nil)
 			uri = { endpoint: endpoint }
+			delim = nil
 			# removing new line and spaces from end and begining of name
 			unless Utils.is_blank?(name)
 				name = name.strip
-				delim ||=	'/' unless name[-1] == '/'
+				delim =	'/' unless name[-1] == '/'
 			end
 			# append to name with delim if operation is given
-			name = "#{name.to_s}" << "#{delim}#{operation}" unless Utils.is_blank?(operation)
+			name = "#{name}#{delim}#{operation}" unless Utils.is_blank?(operation)
 			unless Utils.is_blank?(name)
 				if endpoint.to_s[-1] == '/' && name[0] == '/'
 					# remove leading / from name if endpoint has traling /

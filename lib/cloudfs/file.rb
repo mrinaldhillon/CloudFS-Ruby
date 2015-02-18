@@ -2,9 +2,9 @@ require_relative 'item'
 require_relative 'client'
 require_relative 'filesystem_common'
 
-module Bitcasa
+module CloudFS
 	# File class is aimed to provide native File object like interface 
-	#		to bitcasa cloudfs files
+	#		to cloudfs files
 	#
 	# @author Mrinal Dhillon
 	# @example
@@ -38,6 +38,8 @@ module Bitcasa
 		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
 		#		Client::Errors::OperationNotAllowedError]
 		# @review overwrites a file if it exists at local path
+		#	@note Internally uses chunked stream download, 
+		#		max size of in-memory chunk is 16KB.
 		def download(local_path, filename: nil)
 			fail Client::Errors::ArgumentError, 
 				"local path is not a valid directory" unless ::File.directory?(local_path)
@@ -90,6 +92,9 @@ module Bitcasa
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
 		#		Client::Errors::OperationNotAllowedError]
+		#
+		#	@note	Pass block to stream chunks as soon as available, 
+		#		preferable for large reads.
 		def read(bytecount: nil, &block)
 			fail Client::Errors::ArgumentError, 
 				"Negative length given - #{bytecount}" if bytecount && bytecount < 0
@@ -149,6 +154,13 @@ module Bitcasa
 			@offset	
 		end
 
+		#	@return [String]
+		#	@!visibility private
+		def to_s
+			"#{self.class}: url #{@url}, name: #{@name}, mime: #{@mime}, version: #{@version}, size: #{@size} bytes"
+		end
+
+		alias inspect to_s
 		private :read_to_buffer, :read_to_proc
 	end
 end

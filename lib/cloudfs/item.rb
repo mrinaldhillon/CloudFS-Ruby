@@ -1,7 +1,7 @@
 require_relative 'filesystem_common'
 require_relative 'client'
 
-module Bitcasa
+module CloudFS
 	# An object managed by CloudFS. An item can be either a file or folder. 
 	#
 	#	Item is the base class for File, Container whereas Folder is derived from Container
@@ -190,7 +190,7 @@ module Bitcasa
 				@changed_properties[:application_data].merge!(hash)
 		end
 
-		# @param client [Client] restful Client instance
+		# @param client [Client] RESTful Client instance
 		# @param parent [Item, String] default: ("/") parent folder item or url
 		# @param in_trash [Boolean] set true to specify item exists in trash
 		# @param in_share [Boolean] set true to specify item exists in share
@@ -214,7 +214,7 @@ module Bitcasa
 		def initialize(client, parent: nil, in_trash: false, 
 				in_share: false, old_version: false, **properties)
 			fail Client::Errors::ArgumentError, 
-				"Invalid client, input type must be Bitcasa::Client" unless client.is_a?(Client)
+				"Invalid client, input type must be CloudFS::Client" unless client.is_a?(Client)
 			
 			@client = client
 			set_item_properties(parent: parent, in_trash: in_trash, 
@@ -579,10 +579,27 @@ module Bitcasa
 		# @return [void]
 		def set_url(parent)
 			parent_url = FileSystemCommon.get_folder_url(parent)
-#	@url = parent_url == "/" ? "/#{@id}" : "#{parent_url}/#{@id}"
-			@url = parent_url.nil? ? "#{@id}" : "#{parent_url}/#{@id}"
+			@url = parent_url == "/" ? "/#{@id}" : "#{parent_url}/#{@id}"
+#			@url = parent_url.nil? ? "#{@id}" : "#{parent_url}/#{@id}"
 		end
 	
+		#	@return [String]
+		#	@!visibility private
+		def to_s
+			"#{self.class}: url #{@url}, name: #{@name}"
+		end
+
+		alias inspect to_s
+
+		#	@return [Boolean]
+		#	@!visibility private
+		def eql?(item)
+			self.class.equal?(item.class)	&&
+			item.respond_to?(:id) && 
+			item.id == @id
+		end
+
+		alias == eql?
 		private :set_item_properties, :changed_properties_reset, 
 			:set_restored_item_properties, :get_properties_in_hash, :set_url,
 			:get_properties_from_server

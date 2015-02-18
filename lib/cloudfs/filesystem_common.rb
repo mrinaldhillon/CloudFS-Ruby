@@ -1,11 +1,11 @@
 require_relative 'client'
 
-module Bitcasa
+module CloudFS
 	# @private
 	# Provides common filesystem operations consumed by other classes
 	module FileSystemCommon
 		extend self
-
+		
 		# @return [Audio, Video, Photo, Document, File] based on mime type
 		def create_file_from_mime_type(client, parent: nil, 
 				in_trash: false, in_share: false, old_version: false, **hash)
@@ -37,7 +37,7 @@ module Bitcasa
 
 
 		# Create item from hash
-		# @param client [Client] restful client instance
+		# @param client [Client] RESTful client instance
 		# @param parent [Item, String] parent item of type folder
 		# @param in_trash [Boolean] set true to specify, item exists in trash
 		# @param in_share [Boolean] set true to specify, item exists in share
@@ -73,7 +73,7 @@ module Bitcasa
 
 		# Create array items from corresponding array of hashes
 		# @param hashes [Array<Hash>] array of hash properties of items
-		# @param client [Client] restful client instance
+		# @param client [Client] RESTful client instance
 		# @option parent [Item, String] parent item of type folder
 		# @option in_trash [Boolean] set true to specify, items exist in trash
 		# @option in_share [Boolean] set true to specify, items exist in share
@@ -102,7 +102,7 @@ module Bitcasa
 					folder.respond_to?(:type) && (folder.type == "folder"))
 			return folder if folder.is_a?(String)
 			fail Client::Errors::ArgumentError, 
-				"Invalid input of type #{folder.class}, expected destination item of type Bitcasa::Folder or string"
+				"Invalid input of type #{folder.class}, expected destination item of type CloudFS::Folder or string"
 		end
 
 		# Get item url
@@ -150,7 +150,7 @@ module Bitcasa
 				"Operation not allowed as item is in share" if (in_share && item.in_share?)
 			fail Client::Errors::OperationNotAllowedError, 
 				"Operation not allowed as item is an older version" if (
-						item.kind_of?(Bitcasa::File) && old_version && item.old_version?)
+						item.kind_of?(CloudFS::File) && old_version && item.old_version?)
 		end
 
 		# Validate share's current state for operations
@@ -169,7 +169,7 @@ module Bitcasa
 
 		# Fetches properties of named path by recursively listing each member 
 		#			starting root with depth 1 and filter=name=path_member
-		# @param client [Client] restful client instance
+		# @param client [Client] RESTful client instance
 		# @option named_path [String] named (not pathid) cloudfs path of item i.e. /a/b/c
 		# @return [Hash] containing url and meta of item
 		# @raise [Client::Errors::ServiceError, Client::Errors::ArgumentError]
@@ -195,7 +195,7 @@ module Bitcasa
 
 		# Get an item's properties from server
 		#
-		# @param client [Client] restful Client instance
+		# @param client [Client] RESTful Client instance
 		# @param parent_url [String] url of parent
 		# @param id [String] pathid of item
 		# @param type [String] ("file", "folder")

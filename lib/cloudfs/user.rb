@@ -1,6 +1,6 @@
 require_relative 'client'
 
-module Bitcasa
+module CloudFS
 	# User class maintains user profile information
 	#
 	# @author Mrinal Dhillon
@@ -56,7 +56,7 @@ module Bitcasa
 			end
 		end
 
-		# @param client [Client] bitcasa restful api object
+		# @param client [Client] cloudfs RESTful api object
 		# @param [Hash] properties metadata of user
 		# @option properties [String] :username
 		# @option properties [Fixnum] :created_at in milliseconds since epoch
@@ -67,7 +67,7 @@ module Bitcasa
 		# @option properties [String] :id
 		def initialize(client, **properties)
 			fail Client::Errors::ArgumentError, 
-				"invalid client type #{client.class}, expected Bitcasa::Client" unless client.is_a?(Bitcasa::Client)
+				"invalid client type #{client.class}, expected CloudFS::Client" unless client.is_a?(CloudFS::Client)
 
 			@client = client
 			set_user_info(**properties)
@@ -81,15 +81,27 @@ module Bitcasa
 			properties.fetch(:id) { fail Client::Errors::ArgumentError, 
 				"Missing required id" }
 			@properties = properties
-			nil
 		end
 
 		# Refresh this user's metadata from server
+		#	@return [User] returns self
 		def refresh
 			response = @client.get_profile
 			set_user_info(**response)
+			self
 		end
 
+		#	@return [String]
+		#	@!visibility private
+		def to_s
+			str = "#{self.class}: username: #{@properties[:username]}"
+			str <<  ", first name: #{@properties[:first_name]}" unless Client::Utils.is_blank?(@properties[:first_name])
+			str <<  ", last name: #{@properties[:last_name]}" unless Client::Utils.is_blank?(@properties[:last_name])
+			str <<  ", email: #{@properties[:email]}" unless Client::Utils.is_blank?(@properties[:email])
+			str
+		end
+
+		alias inspect to_s
 		private :set_user_info
 	end
 end

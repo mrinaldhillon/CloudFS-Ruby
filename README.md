@@ -1,82 +1,74 @@
-# Bitcasa CloudFS SDK for ruby.
+# CloudFS-Ruby SDK for ruby
 
 ##	Synopsis
 
-This sdk provides a simple filesystem like interface to Bitcasa CloudFS services.
-It enables application to consume cloudfs storage service by creating a session
-	and accessing filesystem that provides files and folders apis.
-It supports advance cloudfs filesystem features i.e. shares, trash, file versions,
-	 account and user.
+* This sdk provides a simple filesystem like interface to Bitcasa CloudFS service.
+* It enables application to create authenticated RESTful interfaces 
+	to filesystem objects in end-user's CloudFS account.
 
 ##	Features
 
-* Fully supports current set of CloudFS rest apis.
-* Chunked stream downloads
-* Path, String, IO uploads
+* Supports current set of CloudFS rest apis except following features.
 
 ##	Not Supported
 *	File upload does not support reuse exists option.
-*	Cannot set application_data on files or folders at creation time.
-*	Configurable chunk size for chunked stream downloads. default is 16KB
-*	Configurable keep alive timeout for persistent connections in connection pool.
-		Default is 15 seconds.
-*	Async api support
+*	Cannot set application_data and properties on files or folders at creation time.
 
 ##	Installation
 
-	$ gem install bitcasa
+	$ gem install cloudfs_sdk
 
 ## Usage
 
 ```ruby
 # in Gemfile
-	gem 'bitcasa'
+	gem 'cloudfs_sdk'
 
 # in application
-	require 'bitcasa'
+	require 'cloudfs'
 ```
 
 ##	Configuration
 *	Session:
-		You need to initailize session with clientid, secret and api server
+		You need to initailize session with clientid, secret and api server 
 		host given in your CloudFS account.
 
 ```ruby
-		session = Bitcasa::Session.new(clientid, secret, host)
+		session = CloudFS::Session.new(clientid, secret, host)
 ```
 
 *	Connection Configurations:
-		Http connection configuration options are provided to support varied
-		environment and usage scenarios: connect_timeout, receive_timeout,
+		Http connection configuration options are provided to support varied 
+		environment and usage scenarios: connect_timeout, receive_timeout, 
 		send_timeout, max_retries(http 500 level errors).
 
 ```ruby
-		session = Bitcasa::Session.new(clientid, secret, host, connect_timeout: 60,
+		session = CloudFS::Session.new(clientid, secret, host, connect_timeout: 60, 
 			receive_timeout: 120, send_timeout: 240, max_retries: 3)
 ```
 
 *	Authenticate:
 		Authenticate the session with username and password of your CloudFS application.
 
-```ruby
+```ruby	
 		session.authenticate(username, password)
 ```
 
 
 ##	Debug
-*	In order to log http wire trace initialize session with http_debug option
+*	In order to log http wire trace initialize session with http_debug option 
 	with an object that responds to #<<. For example STDERR, STDOUT, File etc.
 
 ```ruby
-		session = Bitcasa::Session.new(clientid, secret, host, http_debug: STDERR)
+		session = CloudFS::Session.new(clientid, secret, host, http_debug: STDERR)
 ```
 
 ## Hello World
 
 ```ruby
-	# hello_world.rb
+	# tests/hello_world.rb
 
-	require 'bitcasa'
+	require 'cloudfs'
 
 	CLIENT_ID = ''
 	CLIENT_SECRET = ''
@@ -88,22 +80,22 @@ It supports advance cloudfs filesystem features i.e. shares, trash, file version
 	if __FILE__ == $0
 		begin
 		# Initialize Session
-		session = Bitcasa::Session.new(CLIENT_ID, CLIENT_SECRET, BASE_URL)
+		session = CloudFS::Session.new(CLIENT_ID, CLIENT_SECRET, BASE_URL)
 		session.is_linked?		#=> false
 
 		# Authenticate session with test user credentials
 		session.authenticate(TEST_USERNAME, TEST_USER_PASSWORD)
 		session.is_linked?		#=> true
-
+		
 		# Access Filesystem and list root
 		fs = session.filesystem
 		puts "List items under root #{fs.root.list}"
-
+		
 		# Create folder under root
 		folder = fs.root.create_folder("My First Folder", exists: 'OVERWRITE')
 
 		# Upload file in our new folder with string contents
-		file = folder.upload("Hello World!", name: "Hello.txt", exists: "OVERWRITE",
+		file = folder.upload("Hello World!", name: "Hello.txt", exists: "OVERWRITE", 
 				upload_io: true)
 
 		# Read file contents
@@ -121,7 +113,7 @@ It supports advance cloudfs filesystem features i.e. shares, trash, file version
 
 		# Unlink session
 		session.unlink
-		rescue Bitcasa::Client::Errors::Error => error
+		rescue CloudFS::Client::Errors::Error => error
 			puts error
 			puts error.class
 			puts error.code if error.respond_to?(:code)

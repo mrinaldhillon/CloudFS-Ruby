@@ -3,17 +3,17 @@ require_relative 'account'
 require_relative 'user'
 require_relative 'filesystem'
 
-module Bitcasa
+module CloudFS
 	# Establishes a session with the api server on behalf of an authenticated end-user
 	#		
-	#	It maintains a RESTful low level api {Bitcasa::Client} object 
-	#		that provides authenticated access to Bitcasa Cloudfs service end user's 
+	#	It maintains a RESTful low level api {CloudFS::Client} object 
+	#		that provides authenticated access to CloudFS  service end user's 
 	#		account and is shared with file system objects linked with this session - 
 	#		{FileSystem}, {Container}, {File}, {Folder}, {Share}, {Account}, {User}
 	#
 	#	@author Mrinal Dhillon
 	#	@example
-	#		session = Bitcasa::Session.new(clientid, secret, host)
+	#		session = CloudFS::Session.new(clientid, secret, host)
 	#		session.is_linked?		#=> false
 	#		session.autheticate(username, password)
 	#		session.is_linked?		#=> true
@@ -46,7 +46,7 @@ module Bitcasa
 		end
 
 		#	@!attribute [rw] admin_credentials
-		# Credentials of Paid Bitcasa User's admin account
+		# Credentials of Paid CloudFS User's admin account
 		# @overload admin_credentials
 		# 	@return [String]
 		# @overload admin_credentials=(creds={})
@@ -68,7 +68,7 @@ module Bitcasa
 
 		# @param clientid [String] account clientid
 		# @param secret [String] account secret
-		# @param host [String] bitcasa application api server hostname
+		# @param host [String] cloudfs application api server hostname
 		#	@param [Hash] http_conf RESTful connection configurations
 		#	@option http_conf [Fixnum] :connect_timeout (60) for server handshake
 		#	@option http_conf [Fixnum] :send_timeout (0) for send request, 
@@ -77,8 +77,9 @@ module Bitcasa
 		#	@option http_conf [Fixnum] :max_retry (3) for http 500 level errors
 		#	@option http_conf [#<<] :http_debug (nil) to enable http debugging, 
 		#		example STDERR, STDOUT, {::File} object opened with permissions to write
-		# @optimize provide option to load credentials 
-		#		and http connection related configuration from config file, env
+		#	@optimize Configurable chunk size for chunked stream downloads,default is 16KB.
+		#		Configurable keep alive timeout for persistent connections in 
+		#		connection pool, default is 15 seconds. Async api support
 		#	@review optimum default values for http timeouts
 		def initialize(clientid, secret, host, **http_conf)
 			@http_debug = http_conf[:http_debug]
@@ -111,10 +112,10 @@ module Bitcasa
 
 		# Discards current authentication
 		#
-		# @note	Bitcasa objects remain valid only till session is linked, 
-		#		once unlinked all restful objects generated through this session 
+		# @note	CloudFS objects remain valid only till session is linked, 
+		#		once unlinked all RESTful objects generated through this session 
 		#		are expected to raise {Client::Errors::SessionNotLinked} exception 
-		#		for any restful operation.
+		#		for any RESTful operation.
 		#	@note Session cannot be re-authenticated once unlinked.
 		#
 		# @return [true]
@@ -155,7 +156,7 @@ module Bitcasa
 		#
 		# @review Does not allow account creation if current session has already been 
 		#		authenticated. In such scenario account creation can be made possible 
-		#		but returning new {Account} instance with this session's restful client 
+		#		but returning new {Account} instance with this session's RESTful client 
 		#		is not possible since session does not allow re-authentication.
 		def create_account(username, password, email: nil, 
 				first_name: nil, last_name: nil)

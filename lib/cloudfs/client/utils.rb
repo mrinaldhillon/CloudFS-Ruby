@@ -3,7 +3,7 @@ require 'base64'
 require 'openssl'
 require 'multi_json'
 
-module Bitcasa
+module CloudFS
 	class Client
 		#	@private
 		# Utility functions module, used to handle common tasks
@@ -40,7 +40,7 @@ module Bitcasa
 				sorted_hash
 			end
 
-			# Generate OAuth2 signature based on bitcasa cloudfs 
+			# Generate OAuth2 signature based on cloudfs 
 			#		signature calculation algorithm
 			# 
 			# @param endpoint [String] server endpoint

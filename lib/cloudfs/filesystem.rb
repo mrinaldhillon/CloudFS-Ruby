@@ -2,8 +2,8 @@ require_relative 'client'
 require_relative 'folder'
 require_relative 'filesystem_common'
 
-module Bitcasa
-	# FileSystem class provides interface to maintain bitcasa user's filesystem
+module CloudFS
+	# FileSystem class provides interface to maintain cloudfs user's filesystem
 	#
 	# @author Mrinal Dhillon
 	class FileSystem
@@ -14,7 +14,7 @@ module Bitcasa
 			@root ||= get_root
 		end
 
-		# @param client [Client] bitcasa restful api object
+		# @param client [Client] cloudfs RESTful api object
 		# @raise [Client::Errors::ArgumentError]
 		def initialize(client)
 			fail Client::Errors::ArgumentError, 

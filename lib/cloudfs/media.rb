@@ -1,5 +1,5 @@
 require_relative 'file.rb'
-module Bitcasa
+module CloudFS
 	
 	#	@review Not creating file objects based on mime type, 
 	#		since save operation cannot update the class of file object, 

@@ -1,7 +1,7 @@
-module Bitcasa
+module CloudFS
 	class Client
 		#	@private
-		# Declares bitcasa constants
+		# Declares cloudfs constants
 		module Constants
 			HTTP_AGENT_NAME = "BCSClient"
 			REQUEST_KEY_METHOD = "method"
@@ -50,7 +50,7 @@ module Bitcasa
 			# ENDPOINT_FOLDERS for folders
 			ENDPOINT_FOLDERS = "/v2/folders/"
 			# ENDPOINT_FILES for files
-			ENDPOINT_FILES = "/v2/files"
+			ENDPOINT_FILES = "/v2/files/"
 			# ENDPOINT_SHARES for share forlder
 			ENDPOINT_SHARES = "/v2/shares/"
 			# ENDPOINT_HISTORY for history

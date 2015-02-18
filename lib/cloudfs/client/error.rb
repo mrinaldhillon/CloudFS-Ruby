@@ -1,11 +1,10 @@
 require_relative 'utils'
 
-module Bitcasa
+module CloudFS
 	class Client
 		# Defines exceptional behavior.
-		# {Error} is base class of all exceptions raised by Bitcasa SDK.
-		# {Errors::ServiceError} is base class of all errors returned by 
-		#		Bitcasa Cloudfs service.
+		# {Error} is base class of all exceptions raised by CloudFS SDK.
+		# {Errors::ServiceError} is base class of all errors returned by CloudFS service.
 		# Other exceptions are {Errors::ArgumentError}, {Errors::ClientError}, 
 		#		{Errors::InvalidItemError}, {Errors::InvalidShareError}, 
 		#		{Errors::OperationNotAllowedError}, {Errors::SessionNotLinked}
@@ -29,7 +28,7 @@ module Bitcasa
 		# @author Mrinal Dhillon
 		module Errors
 		
-			# Maps exception classes to error codes returned by Bitcasa CloudFS Service
+			# Maps exception classes to error codes returned by CloudFS Service
 			BITCASA_ERRORS = {
 				9999	=>	'GeneralPanicError',
 				9000	=>	'APIError',
@@ -115,7 +114,7 @@ module Bitcasa
 			}
 	
 			# All errors can be rescued by Errors::Error
-			#	Top most error class, all bitcasa exceptions can be rescued by this class
+			#	Top most error class, all cloudfs exceptions can be rescued by this class
 			class Error < StandardError; end
 
 			# Item does not exists anymore, this is possible when item has been deleted
@@ -204,7 +203,7 @@ module Bitcasa
 				end
 			end
 	
-			# Base class of all errors returned by bitcasa cloud service
+			# Base class of all errors returned by cloudfs service
 			class ServiceError < Error
 				# @param message [String] error message
 				# @param original [Exception] original exception
@@ -253,19 +252,19 @@ module Bitcasa
 			class APIError <  ServiceError; end
 			class APICallLimitReached < ServiceError; end
 
-			# Base class for filesystem errors returned by bitcasa cloudfs service.
+			# Base class for filesystem errors returned by cloudfs service.
 			class FileSystemError < ServiceError; end
 
-			# Base class for share errors returned by bitcasa cloudfs service.
+			# Base class for share errors returned by cloudfs service.
 			class ShareError < ServiceError; end
 			
-			# Base class for folder errors returned by bitcasa cloudfs service.
+			# Base class for folder errors returned by cloudfs service.
 			class FolderError < ServiceError; end
 			
-			# Base class for file errors returned by bitcasa cloudfs service.
+			# Base class for file errors returned by cloudfs service.
 			class FileError < ServiceError; end
 			
-			# Base class for endpoint errors returned by bitcasa cloudfs service.
+			# Base class for endpoint errors returned by cloudfs service.
 			class EndpointError < ServiceError; end
 	
 			# FileSystem Errors	
@@ -345,10 +344,10 @@ module Bitcasa
 			class AlreadyExists < EndpointError; end
 			class NotAllowed < EndpointError; end
 
-			# Raises specific exception mapped by Bitcasa error code in json message
+			# Raises specific exception mapped by CloudFS error code in json message
 			#
 			# @param error [ServerError] contains message, request, response context 
-			#			and http code returned by bitcasa cloudfs service
+			#			and http code returned by cloudfs service
 			#
 			# @raise [ServiceError] mapped by code in message parameter in {ServerError}
 			def self.raise_service_error(error)

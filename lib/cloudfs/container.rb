@@ -2,7 +2,7 @@ require_relative 'item'
 require_relative 'client'
 require_relative 'filesystem_common'
 
-module Bitcasa
+module CloudFS
 	# Base class for {Folder}
 	#
 	# @author Mrinal Dhillon

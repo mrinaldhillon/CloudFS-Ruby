@@ -1,7 +1,7 @@
 require_relative 'client'
 require_relative 'filesystem_common'
 
-module Bitcasa
+module CloudFS
 	# Share class is used to create and manage shares in end-user's account	
 	# 
 	# @author Mrinal Dhillon
@@ -49,7 +49,7 @@ module Bitcasa
 			end
 		end
 
-		# @param client [Client] bitcasa RESTful api object
+		# @param client [Client] cloudfs RESTful api object
 		# @param [Hash] properties metadata of share
 		# @option  properties [String] :share_key
 		# @option properties [String] :share_type
@@ -60,7 +60,7 @@ module Bitcasa
 		# @option properties [Fixnum] :date_created
 		def initialize(client, **properties)
 			fail Client::Errors::ArgumentError, 
-				"Invalid client, input type must be Bitcasa::Client" unless client.is_a?(Bitcasa::Client)
+				"Invalid client, input type must be CloudFS::Client" unless client.is_a?(CloudFS::Client)
 			@client = client
 			set_share_info(**properties)
 		end
@@ -77,7 +77,6 @@ module Bitcasa
 			@date_created = params[:date_created]
 			@exists = true
 			changed_properties_reset
-			nil
 		end
 
 		# Reset changed properties
@@ -190,7 +189,16 @@ module Bitcasa
 			FileSystemCommon.validate_share_state(self)
 			response = @client.browse_share(share_key).fetch(:share)
 			set_share_info(**response)
+			self
 		end
+		
+		#	@return [String]
+		#	@!visibility private
+		def to_s
+			"#{self.class}: name: #{@name}, size: #{@size}bytes"
+		end
+
+		alias inspect to_s
 
 		private :set_share_info, :changed_properties_reset
 	end	

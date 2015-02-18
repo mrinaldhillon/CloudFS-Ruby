@@ -2,7 +2,7 @@ require_relative 'container'
 require_relative 'filesystem_common'
 
 
-module Bitcasa
+module CloudFS
 	# Represents a folder in the user's filesystem that can contain files and other folders.
 	#
 	#	@author Mrinal Dhillon
@@ -60,6 +60,13 @@ module Bitcasa
 						parent: @url, **response)
 		end
 
+		#	@return [String]
+		#	@!visibility private
+		def to_s
+			"#{self.class}: url #{@url}, name: #{@name}"
+		end
+
+		alias inspect to_s
 		# overriding inherited properties that are not not valid for folder
 		private :extension, :extension=, :mime, :mime=, :blocklist_key, 
 			:blocklist_id, :size, :versions, :old_version?
