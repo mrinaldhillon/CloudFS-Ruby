@@ -1,4 +1,4 @@
-require_relative 'client'
+require_relative 'rest_adapter'
 require_relative 'folder'
 require_relative 'filesystem_common'
 

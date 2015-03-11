@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-require_relative '../../lib/cloudfs/client'
+require_relative '../../lib/cloudfs/rest_adapter'
 require_relative './folder'
 require 'tempfile'
 

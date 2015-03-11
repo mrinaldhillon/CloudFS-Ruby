@@ -1,5 +1,5 @@
 require_relative 'filesystem_common'
-require_relative 'client'
+require_relative 'rest_adapter'
 
 module CloudFS
 	# An object managed by CloudFS. An item can be either a file or folder. 

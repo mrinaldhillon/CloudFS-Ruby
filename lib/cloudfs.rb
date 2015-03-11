@@ -1,5 +1,5 @@
 require_relative 'cloudfs/version'
-require_relative 'cloudfs/client'
+require_relative 'cloudfs/rest_adapter'
 require_relative 'cloudfs/user'
 require_relative 'cloudfs/account'
 require_relative 'cloudfs/session'

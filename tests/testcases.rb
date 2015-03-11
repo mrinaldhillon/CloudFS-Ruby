@@ -5,7 +5,7 @@ require_relative './folder'
 require_relative './filesystem'
 
 # Define credentials in ./session.rb
-# Run ./client.rb to test low level apis
+# Run ./rest_adapter.rb to test low level apis
 # Call TestSession#sessionapi with http_debug: STDERR, STDOUT or ::File object 
 #		to enable http wire trace
 #	set test_debug: true in each api to enable test cases to be descriptive

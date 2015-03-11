@@ -1,4 +1,4 @@
-require_relative 'client'
+require_relative 'rest_adapter'
 
 module CloudFS
 	# @private
