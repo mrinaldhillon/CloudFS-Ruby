@@ -11,16 +11,16 @@ module CloudFS
 		def id
 			@properties[:id]
 		end
-		
-		#	@!attribute [r] usage
+
+		#	@!attribute [r] storage_usage
 		#	@return [Fixnum] current storage usage of account in bytes
-		def usage
+		def storage_usage
 			@properties[:storage][:usage]
 		end
 
-		#	@!attribute [r] limit
+		#	@!attribute [r] storage_limit
 		#	@return [Fixnum] storage limit of account in bytes
-		def limit
+		def storage_limit
 			@properties[:storage][:limit]
 		end
 
@@ -30,21 +30,27 @@ module CloudFS
 			@properties[:storage][:otl]
 		end
 
-		#	@!attribute [r]	state_id
+		#	@!attribute [r]	account_state_id
 		#	@return [String] id of current account state
-		def state_id
+		def account_state_id
 			@properties[:account_state][:id]
 		end
 
-		#	@!attribute [r] plan
+		#	@!attribute [r] account_state_display_name
+		#	@return [String] Human readable name of account's CloudFS state
+		def account_state_display_name
+			@properties[:account_state][:display_name]
+		end
+
+		#	@!attribute [r] account_plan_display_name
 		#	@return [String] Human readable name of account's CloudFS plan
-		def plan
+		def account_plan_display_name
 			@properties[:account_plan][:display_name]
 		end
 
-		#	@!attribute [r] plan_id
+		#	@!attribute [r] account_plan_id
 		#	@return [String] id of CloudFS plan
-		def plan_id
+		def account_plan_id
 			@properties[:account_plan][:id]
 		end
 
@@ -54,9 +60,9 @@ module CloudFS
 			@properties[:session][:locale]
 		end
 
-		#	@!attribute [r] locale
+		#	@!attribute [r] account_locale
 		#	@return [String] locale of the entire account
-		def locale
+		def account_locale
 			@properties[:locale]
 		end
 

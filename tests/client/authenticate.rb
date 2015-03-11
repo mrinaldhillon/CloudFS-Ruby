@@ -3,11 +3,11 @@ require_relative '../../lib/cloudfs/client'
 
 module TestAuthApi
 	extend self
-	@clientid = ''
-	@secret = ''
-	@host = ''
-	@username = ''
-	@password = ''
+	@clientid = '84R2MXW09PT-oVzuz2w42E325mvQXQccJKVWFalznU4'
+	@secret = 'ebG9-6CKI6qjtJsFtChUwsiN9-Hf7xd6_u_Br0A5KP-4EDiqKX2gQ0ju-RJr0BdSJpzGmM6COI-Fdjgi7pNblw'
+	@host = 'b796hixubr.cloudfs.io'
+	@username = 'gihand@calcey.com'
+	@password = 'user@123'
 
 	def get_client(http_debug: nil)
 		CloudFS::Client.new(@clientid, @secret, @host, http_debug: http_debug)

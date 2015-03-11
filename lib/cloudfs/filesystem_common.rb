@@ -214,5 +214,19 @@ module CloudFS
 			end
 		end
 
+		# Get an item's properties from server
+		#
+		# @param client [Client] RESTful Client instance
+		# @param item_url [String] url of item
+		# @return File, Folder, Share] item
+		#
+		# @raise [Client::Errors::ServiceError]
+		def get_item(client, item_url)
+
+				item_meta = client.get_file_meta(item_url)
+				item = create_item_from_hash(client, **item_meta)
+			
+		end
+
 	end
 end	

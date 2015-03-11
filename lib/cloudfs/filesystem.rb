@@ -184,7 +184,7 @@ module CloudFS
 		# @return [Array<File, Folder>] items in trash
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
-		def browse_trash
+		def trash
 			response = @client.browse_trash.fetch(:items)
 			FileSystemCommon.create_items_from_hash_array(response, 
 					@client, in_trash: true)
@@ -212,7 +212,7 @@ module CloudFS
 		# List shares created by end-user
 		# @return [Array<Share>] shares
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError]
-		def list_shares
+		def shares
 			response = @client.list_shares
 			FileSystemCommon.create_items_from_hash_array(response, @client)
 		end
@@ -244,13 +244,24 @@ module CloudFS
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::ArgumentError]
 		#	@note	This method is intended for retrieving share from another user
-		def share_from_share_key(share_key, password: nil)
+		def retrieve_share(share_key, password: nil)
 			fail Client::Errors::ArgumentError, 
 				"Invalid input, expected items or paths" if Client::Utils.is_blank?(share_key)
 
 			@client.unlock_share(share_key, password) if password
 			response = @client.browse_share(share_key).fetch(:share)
 			FileSystemCommon.create_item_from_hash(@client, **response)
+		end
+
+		def get_item(item_path)
+			fail Client::Errors::ArgumentError, 
+				"Invalid input, expected item path" if Client::Utils.is_blank?(item_path)
+
+			if item_path.is_a?(String)
+				FileSystemCommon.get_item(@client, item_path)
+			else
+				return nil
+			end
 		end
 
 

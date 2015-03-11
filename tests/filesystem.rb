@@ -23,6 +23,7 @@ module TestFileSystem
 		list_items(items)
 
 		share_api(fs, folder)
+		get_items(fs,items)
 		copy_items(fs, folder, items)
 		move_items(fs, folder, items)
 		delete_items(fs, items)
@@ -44,7 +45,7 @@ module TestFileSystem
 		debug "\nCreate Share"
 		share = fs.create_share(test_folder)
 		debug "\nList Shares"
-		shares = fs.list_shares
+		shares = fs.shares
 		shares.each do |share|
 			list_share(share)
 		end
@@ -60,7 +61,7 @@ module TestFileSystem
 		list_items(items)
 
 		debug "\nGet new share from share key"
-		new_share = fs.share_from_share_key(share.share_key, password: password)
+		new_share = fs.retrieve_share(share.share_key, password: password)
 		items = share.list
 		list_items(items)
 
@@ -168,6 +169,12 @@ module TestFileSystem
 				debug "name: #{i.name}"
 				debug "url: #{i.url}" 
 				yield i if block
+			end
+	end
+
+	def get_items(fs,items)
+		Array(items).each do |i|
+				puts "Item: #{fs.get_item(i.url)}"
 			end
 	end
 
