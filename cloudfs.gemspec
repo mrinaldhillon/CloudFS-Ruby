@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'cloudfs/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "cloudfs_sdk"
+  spec.name          = "cloudfs"
   spec.version       = CloudFS::VERSION
   spec.authors       = ['Bitcasa Inc.']
   spec.email         = ['dstrong@bitcasa.com']
