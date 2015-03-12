@@ -1,7 +1,4 @@
-require 'minitest/autorun'
-require 'minitest/spec'
-require 'cloudfs'
-require_relative 'configuration'
+require_relative 'spec_helper'
 
 describe CloudFS::FileSystem do
  before do 
