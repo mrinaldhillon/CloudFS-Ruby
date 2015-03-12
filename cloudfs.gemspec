@@ -12,7 +12,8 @@ Gem::Specification.new do |spec|
   spec.description   = 'CloudFS Ruby SDK for Bitcasa cloud storage filesystem'
   spec.homepage      = "https://github.com/bitcasa/CloudFS-Ruby"
 	spec.license			 = "MIT"
-  spec.files         = Dir['lib/**/*', 'tests/**/*', '.yardopts']
+  spec.files         = Dir['lib/**/*', '.yardopts']
+  spec.test_files    = Dir['spec/**/*_spec.rb']
   spec.require_paths = ['lib']
   spec.has_rdoc      = 'yard'
 	spec.platform    = Gem::Platform::RUBY
