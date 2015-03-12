@@ -4,4 +4,5 @@ module Configuration
   HOST = 'evyg9ym7w1.cloudfs.io'
   USERNAME = 'dhanushka@calcey.com'
   PASSWORD = 'dhanushka'
+  TEST_FOLDER = 'ruby_sdk_test'
 end

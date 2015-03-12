@@ -1,12 +1,10 @@
-# CloudFS-Ruby SDK for ruby
+# Bitcasa SDK for Ruby
 
-##	Synopsis
+The **Bitcasa SDK for Ruby** enables Ruby developers to easily work with [Bitcasa 
+Cloud Storage Platform](https://www.bitcasa.com/) and build scalable solutions.
 
-* This sdk provides a simple filesystem like interface to Bitcasa CloudFS service.
-* It enables application to create authenticated RESTful interfaces 
-	to filesystem objects in end-user's CloudFS account.
-
-##	Features
+* [REST API Documentation](https://www.bitcasa.com/cloudfs-api-docs/)
+* [Blog](http://blog.bitcasa.com/)
 
 * Supports current set of CloudFS rest apis except following features.
 
@@ -16,110 +14,71 @@
 
 ##	Installation
 
-	$ gem install cloudfs_sdk
+	$ gem install cloudfs
 
-## Usage
+## Using the SDK
 
-```ruby
 # in Gemfile
-	gem 'cloudfs_sdk'
+    gem 'cloudfs'
 
 # in application
-	require 'cloudfs'
-```
+    require 'cloudfs'
 
-##	Configuration
-*	Session:
-		You need to initailize session with clientid, secret and api server 
-		host given in your CloudFS account.
+Use the credentials you obtained from Bitcasa admin console to create a client session. This session can be used for all future requests to Bitcasa.
 
 ```ruby
-		session = CloudFS::Session.new(clientid, secret, host)
+session = CloudFS::Session.new(clientid, secret, host)
+session.authenticate(username, password)
 ```
 
-*	Connection Configurations:
-		Http connection configuration options are provided to support varied 
-		environment and usage scenarios: connect_timeout, receive_timeout, 
-		send_timeout, max_retries(http 500 level errors).
+Getting the root folder
 
 ```ruby
-		session = CloudFS::Session.new(clientid, secret, host, connect_timeout: 60, 
-			receive_timeout: 120, send_timeout: 240, max_retries: 3)
+//Folder root = session.getFileSystem().getRoot();
 ```
 
-*	Authenticate:
-		Authenticate the session with username and password of your CloudFS application.
+Getting the contents of root folder
 
-```ruby	
-		session.authenticate(username, password)
+```ruby
+//Item[] itemArray = session.getFileSystem().list("");
+```
+or
+```ruby
+//Item[] itemArray = session.getFileSystem().list(root);
 ```
 
+Deleting the contents of root folder
+
+```ruby
+//session.getFileSystem().delete(itemArray);
+```
+
+Uploading a file to root folder
+
+```ruby
+//root.upload(pathOfFile, Exists.FAIL, listener);
+```
+
+Download a file from root folder
+
+```ruby
+//File fileToDownload = session.getFileSystem().getFile(pathOfFileToDownload);
+//fileToDownload.download(localDestinationPath, listener);
+```
+
+Create user (for paid accounts only)
+
+```ruby
+//AdminSession adminSession = new AdminSession(adminEndPoint, adminClientId, adminClientSecret);
+//Profile profile = adminSession.admin().createAccount(username, password, email, firstName, lastName);
+```
 
 ##	Debug
 *	In order to log http wire trace initialize session with http_debug option 
 	with an object that responds to #<<. For example STDERR, STDOUT, File etc.
 
 ```ruby
-		session = CloudFS::Session.new(clientid, secret, host, http_debug: STDERR)
+session = CloudFS::Session.new(clientid, secret, host, http_debug: STDERR)
 ```
 
-## Hello World
-
-```ruby
-	# tests/hello_world.rb
-
-	require 'cloudfs'
-
-	CLIENT_ID = ''
-	CLIENT_SECRET = ''
-	BASE_URL = ''
-
-	TEST_USERNAME = ''
-	TEST_USER_PASSWORD = ''
-
-	if __FILE__ == $0
-		begin
-		# Initialize Session
-		session = CloudFS::Session.new(CLIENT_ID, CLIENT_SECRET, BASE_URL)
-		session.is_linked?		#=> false
-
-		# Authenticate session with test user credentials
-		session.authenticate(TEST_USERNAME, TEST_USER_PASSWORD)
-		session.is_linked?		#=> true
-		
-		# Access Filesystem and list root
-		fs = session.filesystem
-		puts "List items under root #{fs.root.list}"
-		
-		# Create folder under root
-		folder = fs.root.create_folder("My First Folder", exists: 'OVERWRITE')
-
-		# Upload file in our new folder with string contents
-		file = folder.upload("Hello World!", name: "Hello.txt", exists: "OVERWRITE", 
-				upload_io: true)
-
-		# Read file contents
-		file.tell	#=> 0
-		puts "Read file content: #{file.read}"
-
-		# List folder
-		puts "List folder #{folder.list}"
-
-		# List root
-		puts "List items under root #{fs.root.list}"
-
-		# Permanently delete the folder that we created and file in it
-		folder.delete(commit: true, force: true)
-
-		# Unlink session
-		session.unlink
-		rescue CloudFS::Client::Errors::Error => error
-			puts error
-			puts error.class
-			puts error.code if error.respond_to?(:code)
-			puts error.request if error.respond_to?(:request)
-			puts error.response if error.respond_to?(:response)
-			puts error.backtrace if error.respond_to?(:backtrace)
-		end
-	end
-```
+We would love to hear what features or functionality you're interested in, or general comments on the SDK (good and bad - especially bad).
