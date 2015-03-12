@@ -26,7 +26,7 @@ module CloudFS
 		#	@!attribute [r] filesystem
 		# @return [FileSystem] {FileSystem} instance linked with this session
 		def filesystem
-			@filesystem ||= FileSystem.new(@client) 
+			@filesystem ||= FileSystem.new(@rest_adapter)
 		end
 
 		#	@!attribute [r] user
@@ -83,7 +83,7 @@ module CloudFS
 		#	@review optimum default values for http timeouts
 		def initialize(clientid, secret, host, **http_conf)
 			@http_debug = http_conf[:http_debug]
-			@client = Client.new(clientid, secret, host, **http_conf)
+			@rest_adapter = RestAdapter.new(clientid, secret, host, **http_conf)
 			@unlinked = false
 			@admin_credentials = {}
 		end
@@ -98,16 +98,16 @@ module CloudFS
 		#		Client::Errors::ArgumentError, Client::Errors::OperationNotAllowedError]
 		def authenticate(username, password)
 			validate_session
-			fail Client::Errors::OperationNotAllowedError, 
+			fail RestAdapter::Errors::OperationNotAllowedError,
 				"Cannot re-authenticate, initialize new session instance" if is_linked?
 			
-			@client.authenticate(username, password)
+			@rest_adapter.authenticate(username, password)
 		end
 
 		# @return [Boolean] whether current session is linked to the API server 
 		#		and can make authenticated requests	
 		def is_linked?
-			@client.linked?
+			@rest_adapter.linked?
 		end
 
 		# Discards current authentication
@@ -120,7 +120,7 @@ module CloudFS
 		#
 		# @return [true]
 		def unlink
-			@client.unlink
+			@rest_adapter.unlink
 			@unlinked = true
 		end
 
@@ -161,17 +161,17 @@ module CloudFS
 		def create_account(username, password, email: nil, 
 				first_name: nil, last_name: nil)
 			validate_session
-			fail Client::Errors::OperationNotAllowedError, 
+			fail RestAdapter::Errors::OperationNotAllowedError,
 				"New account creation with already linked session is not possible, 
 						initialize new session instance" if is_linked?
 
-			admin_client = Client.new(@admin_credentials[:clientid], 
+			admin_client = RestAdapter.new(@admin_credentials[:clientid],
 					@admin_credentials[:secret], @admin_credentials[:host], 
 					http_debug: @http_debug)
 			begin
 				response = admin_client.create_account(username, password, email: email, 
 					first_name: first_name, last_name: last_name)
-				Account.new(@client, **response)
+				Account.new(@rest_adapter, **response)
 			ensure
 				admin_client.unlink			
 			end
@@ -180,15 +180,15 @@ module CloudFS
 		# @see #account
 		def get_account
 			validate_session
-			response = @client.get_profile
-			Account.new(@client, **response)
+			response = @rest_adapter.get_profile
+			Account.new(@rest_adapter, **response)
 		end
 	
 		#	@see #user
 		def get_user
 			validate_session
-			response = @client.get_profile
-			User.new(@client, **response)
+			response = @rest_adapter.get_profile
+			User.new(@rest_adapter, **response)
 		end
 
 		# Action history lists history of file, folder, and share actions
@@ -203,12 +203,12 @@ module CloudFS
 		#		Client::Errors::OperationNotAllowedError]
 		def action_history(start: -10, stop: nil)
 			validate_session
-			@client.list_history(start: start, stop: stop)
+			@rest_adapter.list_history(start: start, stop: stop)
 		end
 		
 		# @raise [Client::Errors::OperationNotAllowedError]
 		def validate_session
-			fail Client::Errors::OperationNotAllowedError,
+			fail RestAdapter::Errors::OperationNotAllowedError,
 				"This session has been unlinked, initialize new session instance" if @unlinked
 		end
 		private :validate_session, :get_user, :get_account

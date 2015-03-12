@@ -37,7 +37,7 @@ module CloudFS
 
 
 		# Create item from hash
-		# @param client [Client] RESTful client instance
+    # @param rest_adapter [RestAdapter] RESTful rest_adapter instance
 		# @param parent [Item, String] parent item of type folder
 		# @param in_trash [Boolean] set true to specify, item exists in trash
 		# @param in_share [Boolean] set true to specify, item exists in share
@@ -55,7 +55,7 @@ module CloudFS
 			require_relative 'share'
 
 			return Share.new(client, **hash) if hash.key?(:share_key)
-			fail Client::Errors::ArgumentError, 
+			fail RestAdapter::Errors::ArgumentError,
 				"Did not recognize item" unless hash.key?(:type)
 			if (hash[:type] == "folder" || hash[:type] == "root")
 				Folder.new(client, parent: parent, 
@@ -64,7 +64,7 @@ module CloudFS
 				File.new(client, parent: parent, 
 						in_trash: in_trash, in_share: in_share, 
 						old_version: old_version, **hash)
-#create_file_from_mime_type(client, parent: parent, 
+#create_file_from_mime_type(rest_adapter, parent: parent,
 #		in_trash: in_trash, in_share: in_share, 
 #						old_version: old_version, **hash) 
 
@@ -73,18 +73,18 @@ module CloudFS
 
 		# Create array items from corresponding array of hashes
 		# @param hashes [Array<Hash>] array of hash properties of items
-		# @param client [Client] RESTful client instance
+    # @param rest_adapter [RestAdapter] RESTful Client instance
 		# @option parent [Item, String] parent item of type folder
 		# @option in_trash [Boolean] set true to specify, items exist in trash
 		# @option in_share [Boolean] set true to specify, items exist in share
 		# @option old_version [Boolean] set true to specify, items are old version
 		# @return [Array<File, Folder, Share>] items
 		# @raise [Client::Errors::ArgumentError]
-		def create_items_from_hash_array(hashes, client, 
+		def create_items_from_hash_array(hashes, rest_adapter,
 				parent: nil, in_trash: false, in_share: false, old_version: false)
 			items = []
 			hashes.each do |item|
-				resp = create_item_from_hash(client, parent: parent, 
+				resp = create_item_from_hash(rest_adapter, parent: parent,
 						in_trash: in_trash, in_share: in_share, 
 						old_version: old_version, **item)
 				items << resp
@@ -97,11 +97,11 @@ module CloudFS
 		# @return [String] url of item
 		# @raise [Client::Errors::ArgumentError]
 		def get_folder_url(folder)
-			return nil if Client::Utils.is_blank?(folder)
+			return nil if RestAdapter::Utils.is_blank?(folder)
 			return folder.url if (folder.respond_to?(:url) && 
 					folder.respond_to?(:type) && (folder.type == "folder"))
 			return folder if folder.is_a?(String)
-			fail Client::Errors::ArgumentError, 
+			fail RestAdapter::Errors::ArgumentError,
 				"Invalid input of type #{folder.class}, expected destination item of type CloudFS::Folder or string"
 		end
 
@@ -110,10 +110,10 @@ module CloudFS
 		# @return [String] url of item
 		# @raise [Client::Errors::ArgumentError]
 		def get_item_url(item)
-			return nil if Client::Utils.is_blank?(item)
+			return nil if RestAdapter::Utils.is_blank?(item)
 			return item.url if item.respond_to?(:url)
 			return item if item.is_a?(String)
-			fail Client::Errors::ArgumentError, 
+			fail RestAdapter::Errors::ArgumentError,
 				"Invalid input, expected destination item of type file, folder or string"
 		end
 
@@ -122,10 +122,10 @@ module CloudFS
 		# @return [String] name of item
 		# @raise [Client::Errors::ArgumentError]
 		def get_item_name(item)
-			return nil if Client::Utils.is_blank?(item)
+			return nil if RestAdapter::Utils.is_blank?(item)
 			return item.name if item.respond_to?(:name)
 			return item if item.is_a?(String)
-			fail Client::Errors::ArgumentError, 
+			fail RestAdapter::Errors::ArgumentError,
 				"Invalid input, expected destination item of type file, folder or string"
 		end
 
@@ -142,13 +142,13 @@ module CloudFS
 			require_relative 'item'
 			require_relative 'file'
 			return nil unless item.kind_of?(Item)
-			fail Client::Errors::InvalidItemError, 
+			fail RestAdapter::Errors::InvalidItemError,
 				"Operation not allowed as item does not exist anymore" if (exists && item.exists? == false)
-			fail Client::Errors::OperationNotAllowedError, 
+			fail RestAdapter::Errors::OperationNotAllowedError,
 				"Operation not allowed as item is in trash" if (in_trash && item.in_trash?)
-			fail Client::Errors::OperationNotAllowedError, 
+			fail RestAdapter::Errors::OperationNotAllowedError,
 				"Operation not allowed as item is in share" if (in_share && item.in_share?)
-			fail Client::Errors::OperationNotAllowedError, 
+			fail RestAdapter::Errors::OperationNotAllowedError,
 				"Operation not allowed as item is an older version" if (
 						item.kind_of?(CloudFS::File) && old_version && item.old_version?)
 		end
@@ -160,24 +160,24 @@ module CloudFS
 		#		Client::Errors::ArgumentError]
 		def validate_share_state(share, exists: true) 
 			require_relative 'share'
-			fail Client::Errors::ArgumentError, 
+			fail RestAdapter::Errors::ArgumentError,
 				"Invalid object of type #{share.class}, expected Share" unless share.kind_of?(Share)
-			fail Client::Errors::InvalidShareError, 
+			fail RestAdapter::Errors::InvalidShareError,
 				"Operation not allowed as share does not exist anymore" if (exists && share.exists? == false)
 		end
 
 
 		# Fetches properties of named path by recursively listing each member 
 		#			starting root with depth 1 and filter=name=path_member
-		# @param client [Client] RESTful client instance
+    # @param rest_adapter [RestAdapter] RESTful Client instance
 		# @option named_path [String] named (not pathid) cloudfs path of item i.e. /a/b/c
 		# @return [Hash] containing url and meta of item
 		# @raise [Client::Errors::ServiceError, Client::Errors::ArgumentError]
-		def get_properties_of_named_path(client, named_path)
-			fail Client::Errors::ArgumentError, 
-				"Invalid input, expected destination string" if Client::Utils.is_blank?(named_path)
- 			fail Client::Errors::ArgumentError, 
-				"invalid client, input type must be Client" unless client.is_a?(Client)
+		def get_properties_of_named_path(rest_adapter, named_path)
+			fail RestAdapter::Errors::ArgumentError,
+				"Invalid input, expected destination string" if RestAdapter::Utils.is_blank?(named_path)
+ 			fail RestAdapter::Errors::ArgumentError,
+				"invalid rest_adapter, input type must be Client" unless rest_adapter.is_a?(RestAdapter)
 
 			named_path = "#{named_path}".insert(0, '/') unless (named_path[0] == '/')
 			first, *path_members = named_path.split('/')
@@ -185,7 +185,7 @@ module CloudFS
 
 			response = []
 			path_members.each	do |member|
-				response = client.list_folder(path: path, depth: 1, 
+				response = rest_adapter.list_folder(path: path, depth: 1,
 						filter: "name=#{member}", strict_traverse: true)
 				path << "/#{response.first[:id]}"
 			end
@@ -195,28 +195,28 @@ module CloudFS
 
 		# Get an item's properties from server
 		#
-		# @param client [Client] RESTful Client instance
+    # @param rest_adapter [RestAdapter] RESTful Client instance
 		# @param parent_url [String] url of parent
 		# @param id [String] pathid of item
 		# @param type [String] ("file", "folder")
 		# @return [Hash] metadata of item
 		#
 		# @raise [Client::Errors::ServiceError]
-		def get_item_properties_from_server(client, parent_url, id, type, in_trash: false)
+		def get_item_properties_from_server(rest_adapter, parent_url, id, type, in_trash: false)
 #	item_url = parent_url == "/" ? "/#{id}" : "#{parent_url}/#{id}"
 			item_url = parent_url.nil? ? "#{id}" : "#{parent_url}/#{id}"
 			if in_trash == true
-				properties = client.browse_trash(path: item_url).fetch(:meta)
+				properties = rest_adapter.browse_trash(path: item_url).fetch(:meta)
 			elsif type == "folder"
-				properties = client.get_folder_meta(item_url)
+				properties = rest_adapter.get_folder_meta(item_url)
 			else
-				properties = client.get_file_meta(item_url)
+				properties = rest_adapter.get_file_meta(item_url)
 			end
 		end
 
 		# Get an item's properties from server
 		#
-		# @param client [Client] RESTful Client instance
+    # @param client [RestAdapter] RESTful Client instance
 		# @param item_url [String] url of item
 		# @return File, Folder, Share] item
 		#

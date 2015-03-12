@@ -44,7 +44,7 @@ if __FILE__ == $0
 
 	# Unlink session
 	session.unlink
-	rescue CloudFS::Client::Errors::Error => error
+	rescue CloudFS::RestAdapter::Errors::Error => error
 		puts error
 		puts error.class
 		puts error.code if error.respond_to?(:code)

@@ -20,7 +20,7 @@ module CloudFS
 		# @see Item#initialize
 		def initialize(client, parent: nil, in_trash: false, 
 				in_share: false, old_version: false, **properties)
-			fail Client::Errors::ArgumentError, 
+			fail RestAdapter::Errors::ArgumentError,
 		 	"Invalid item of type #{properties[:type]}" unless properties[:type] == "file"
 
 			@offset = 0
@@ -41,7 +41,7 @@ module CloudFS
 		#	@note Internally uses chunked stream download, 
 		#		max size of in-memory chunk is 16KB.
 		def download(local_path, filename: nil)
-			fail Client::Errors::ArgumentError, 
+			fail RestAdapter::Errors::ArgumentError,
 				"local path is not a valid directory" unless ::File.directory?(local_path)
 			FileSystemCommon.validate_item_state(self)
 
@@ -52,7 +52,7 @@ module CloudFS
 				local_filepath = "#{local_path}/#{filename}"
 			end
 			::File.open(local_filepath, 'wb') do |file|
-				@client.download(@url) { |buffer| file.write(buffer) }
+				@rest_adapter.download(@url) { |buffer| file.write(buffer) }
 			end
 			true
 		end
@@ -63,7 +63,7 @@ module CloudFS
 		# @return [String] buffer
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError]
 		def read_to_buffer(bytecount)
-			buffer = @client.download(@url, startbyte: @offset, bytecount: bytecount)
+			buffer = @rest_adapter.download(@url, startbyte: @offset, bytecount: bytecount)
 			@offset += buffer.nil? ? 0 : buffer.size
 			buffer
 		end
@@ -75,7 +75,7 @@ module CloudFS
 		#		chunksize size may vary each time
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError]
 		def read_to_proc(bytecount, &block)
-			@client.download(@url, startbyte: @offset, bytecount: bytecount) do |chunk|
+			@rest_adapter.download(@url, startbyte: @offset, bytecount: bytecount) do |chunk|
 				@offset += chunk.nil? ? 0 : chunk.size
 				yield chunk
 			end
@@ -96,7 +96,7 @@ module CloudFS
 		#	@note	Pass block to stream chunks as soon as available, 
 		#		preferable for large reads.
 		def read(bytecount: nil, &block)
-			fail Client::Errors::ArgumentError, 
+			fail RestAdapter::Errors::ArgumentError,
 				"Negative length given - #{bytecount}" if bytecount && bytecount < 0
 			FileSystemCommon.validate_item_state(self)
 	
@@ -147,7 +147,7 @@ module CloudFS
 			when 2
 				@offset = @size + offset if whence == 2
 			else
-				fail Client::Errors::ArgumentError, 
+				fail RestAdapter::Errors::ArgumentError,
 					"Invalid value of whence, should be 0 or IO::SEEK_SET, 1 or IO::SEEK_CUR, 2 or IO::SEEK_END"
 			end
 			

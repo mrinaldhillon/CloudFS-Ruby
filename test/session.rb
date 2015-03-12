@@ -4,11 +4,11 @@ require 'securerandom'
 
 module TestSession
 	extend self
-		
+
 		@clientid = "oeNMAYpppXeTVm_T8pauBmiQWE-0I69_Tk1NNExXr5I"
 		@secret = "PY40SWUOSquNB3h6Yc-3-r7NINkZubnI1D-S-iV-Wo2obzihFHk_OPzWbgvWy92LE-x-dBsKBaAmuZxBQCPMJA"
 		@host = "dqm5sfycak.cloudfs.io"
-	
+
 		@admin_clientid = "37X7LQaHvXv-4mAubAWElw_pnPq-q29jsuR5H_XEr30"
 		@admin_secret = "kZkp7PQahsMhdTVbNA0IPr413kQ2dobAzNazJMZHE_HM8aNWN47EFa-pNJlhkOeNVsuUmGlxRcTva-PzusEqTQ"
 		@admin_host = ""
@@ -22,7 +22,7 @@ module TestSession
 		puts "Setup Session.."
 		http_debug ||= @http_debug
 		puts "\nInitializing Session"
-		session = Bitcasa::Session.new(@clientid, @secret, @host, 
+		session = CloudFS::Session.new(@clientid, @secret, @host,
 				http_debug: http_debug)
 
 		puts "\nSetting Admin credentials"
@@ -95,7 +95,7 @@ end
 if __FILE__ == $0
 	begin
 		TestSession.sessionapi(http_debug: nil)
-	rescue Bitcasa::Client::Errors::Error => error
+	rescue CloudFS::RestAdapter::Errors::Error => error
 		puts error
 		puts error.class
 		puts error.code if error.respond_to?(:code)

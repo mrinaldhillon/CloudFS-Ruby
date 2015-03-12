@@ -30,27 +30,27 @@ module CloudFS
 			@properties[:storage][:otl]
 		end
 
-		#	@!attribute [r]	account_state_id
+		#	@!attribute [r]	state_id
 		#	@return [String] id of current account state
-		def account_state_id
+		def state_id
 			@properties[:account_state][:id]
 		end
 
-		#	@!attribute [r] account_state_display_name
+		#	@!attribute [r] state_display_name
 		#	@return [String] Human readable name of account's CloudFS state
-		def account_state_display_name
+		def state_display_name
 			@properties[:account_state][:display_name]
 		end
 
-		#	@!attribute [r] account_plan_display_name
+		#	@!attribute [r] plan_display_name
 		#	@return [String] Human readable name of account's CloudFS plan
-		def account_plan_display_name
+		def plan_display_name
 			@properties[:account_plan][:display_name]
 		end
 
-		#	@!attribute [r] account_plan_id
+		#	@!attribute [r] plan_id
 		#	@return [String] id of CloudFS plan
-		def account_plan_id
+		def plan_id
 			@properties[:account_plan][:id]
 		end
 
@@ -66,13 +66,13 @@ module CloudFS
 			@properties[:locale]
 		end
 
-		# @param client [Client] cloudfs RESTful api object
+    # @param rest_adapter [RestAdapter] cloudfs RESTful api object
 		# @param [Hash] properties metadata of account
-		def initialize(client, **properties)
-			fail Client::Errors::ArgumentError, 
-				"invalid client type #{client.class}, expected CloudFS::Client" unless client.is_a?(CloudFS::Client)
+		def initialize(rest_adapter, **properties)
+			fail RestAdapter::Errors::ArgumentError,
+				"invalid client type #{rest_adapter.class}, expected CloudFS::Client" unless rest_adapter.is_a?(CloudFS::RestAdapter)
 
-			@client = client
+			@rest_adapter = rest_adapter
 			set_account_info(**properties)
 		end
 
@@ -85,7 +85,7 @@ module CloudFS
 		# Refresh this user's account metadata from server
 		#	@return [Account] returns self
 		def refresh
-			response = @client.get_profile
+			response = @rest_adapter.get_profile
 			set_account_info(**response)
 			self
 		end

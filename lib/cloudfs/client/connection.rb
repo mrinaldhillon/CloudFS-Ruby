@@ -3,7 +3,7 @@ require_relative 'utils'
 require_relative 'error'
 
 module CloudFS
-	class Client
+	class RestAdapter
 		# Provides RESTful interface
 		#	
 		# @author Mrinal Dhillon

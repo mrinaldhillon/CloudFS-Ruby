@@ -230,7 +230,7 @@ if __FILE__ == $0
 	begin
 		session = TestSession.setup
 		TestFileSystem.api(session, test_debug: false)
-	rescue Bitcasa::Client::Errors::Error
+	rescue CloudFS::RestAdapter::Errors::Error
 		debug error
 		debug error.class
 		debug error.code if error.respond_to?(:code)

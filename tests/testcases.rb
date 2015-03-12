@@ -28,7 +28,7 @@ if __FILE__ == $0
 		TestFileSystem.api(session, test_debug: test_debug)
 		puts "End Test Filesytem Api ***************************************************"
 		puts "\nPassed all test cases"
-	rescue CloudFS::Client::Errors::Error => error
+	rescue CloudFS::RestAdapter::Errors::Error => error
 		puts error
 		puts error.class
 		puts error.code if error.respond_to?(:code)

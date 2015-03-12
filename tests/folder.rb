@@ -32,12 +32,12 @@ module TestFolder
 		debug "absolute path: #{c1.url}"
 
 		debug "\nCopy Folder a1/b2 to d1"
-		d1 = b2.copy_to(parent_folder, name: "d1")
+		d1 = b2.copy(parent_folder, name: "d1")
 		debug "name: #{d1.name}"
 		debug "absolute path: #{d1.url}"
 
 		debug "\nMove Folder d1 to c1/d2"
-		d2 = d1.move_to(c1, name: "d2")
+		d2 = d1.move(c1, name: "d2")
 		debug "name: #{d2.name}"
 		debug "absolute path: #{d2.url}"
 
@@ -143,7 +143,7 @@ if __FILE__ == $0
 	begin
 		session = TestSession.setup
 		TestFolder.api(session, test_debug: false)	
-	rescue CloudFS::Client::Errors::Error => error
+	rescue CloudFS::RestAdapter::Errors::Error => error
 		debug error
 		debug error.class
 		debug error.code if error.respond_to?(:code)

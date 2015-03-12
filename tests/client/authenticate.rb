@@ -10,7 +10,7 @@ module TestAuthApi
 	@password = 'user@123'
 
 	def get_client(http_debug: nil)
-		CloudFS::Client.new(@clientid, @secret, @host, http_debug: http_debug)
+		CloudFS::RestAdapter.new(@clientid, @secret, @host, http_debug: http_debug)
 	end
 
 	def authenticate(client)
@@ -36,7 +36,7 @@ end
 if __FILE__ == $0
 	begin
 		TestAuthApi.setup_and_authenticate
-	rescue CloudFS::Client::Errors::Error => error
+	rescue CloudFS::RestAdapter::Errors::Error => error
 		puts error
 		puts error.class
 		puts error.code if error.respond_to?(:code)

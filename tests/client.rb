@@ -19,7 +19,7 @@ if __FILE__ == $0
 		TestFileApi.api(client)
 		puts "\nEnd Test File Api******************************************************"
 		puts "\nPassed all test cases"
-	rescue CloudFS::Client::Errors::Error => error
+	rescue CloudFS::RestAdapter::Errors::Error => error
 		puts error
 		puts error.class
 		puts error.code if error.respond_to?(:code)

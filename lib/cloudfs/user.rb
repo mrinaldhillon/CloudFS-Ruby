@@ -56,7 +56,7 @@ module CloudFS
 			end
 		end
 
-		# @param client [Client] cloudfs RESTful api object
+    # @param client [RestAdapter] cloudfs RESTful api object
 		# @param [Hash] properties metadata of user
 		# @option properties [String] :username
 		# @option properties [Fixnum] :created_at in milliseconds since epoch
@@ -66,19 +66,19 @@ module CloudFS
 		# @option properties [Fixnum] :last_login in milliseconds since epoch
 		# @option properties [String] :id
 		def initialize(client, **properties)
-			fail Client::Errors::ArgumentError, 
-				"invalid client type #{client.class}, expected CloudFS::Client" unless client.is_a?(CloudFS::Client)
+			fail RestAdapter::Errors::ArgumentError,
+				"invalid client type #{client.class}, expected CloudFS::Client" unless client.is_a?(CloudFS::RestAdapter)
 
-			@client = client
+			@rest_adapter = client
 			set_user_info(**properties)
 		end
 
 		# @see #initialize
 		# @review required parameters
 		def set_user_info(**properties)
-			properties.fetch(:username) { fail Client::Errors::ArgumentError, 
+			properties.fetch(:username) { fail RestAdapter::Errors::ArgumentError,
 				"Missing required username" }
-			properties.fetch(:id) { fail Client::Errors::ArgumentError, 
+			properties.fetch(:id) { fail RestAdapter::Errors::ArgumentError,
 				"Missing required id" }
 			@properties = properties
 		end
@@ -86,7 +86,7 @@ module CloudFS
 		# Refresh this user's metadata from server
 		#	@return [User] returns self
 		def refresh
-			response = @client.get_profile
+			response = @rest_adapter.get_profile
 			set_user_info(**response)
 			self
 		end
@@ -95,9 +95,9 @@ module CloudFS
 		#	@!visibility private
 		def to_s
 			str = "#{self.class}: username: #{@properties[:username]}"
-			str <<  ", first name: #{@properties[:first_name]}" unless Client::Utils.is_blank?(@properties[:first_name])
-			str <<  ", last name: #{@properties[:last_name]}" unless Client::Utils.is_blank?(@properties[:last_name])
-			str <<  ", email: #{@properties[:email]}" unless Client::Utils.is_blank?(@properties[:email])
+			str <<  ", first name: #{@properties[:first_name]}" unless RestAdapter::Utils.is_blank?(@properties[:first_name])
+			str <<  ", last name: #{@properties[:last_name]}" unless RestAdapter::Utils.is_blank?(@properties[:last_name])
+			str <<  ", email: #{@properties[:email]}" unless RestAdapter::Utils.is_blank?(@properties[:email])
 			str
 		end
 

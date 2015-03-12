@@ -64,8 +64,8 @@ module TestSession
 		puts "Account id: #{account.id}"
 		puts "Usage: #{account.storage_usage}"
 		puts "Limit: #{account.storage_limit}"
-		puts "Plan: #{account.account_plan_display_name}"
-		puts "State: #{account.account_state_display_name}"
+		puts "Plan: #{account.plan_display_name}"
+		puts "State: #{account.state_display_name}"
 	end
 
 	def get_history(session)
@@ -98,7 +98,7 @@ end
 if __FILE__ == $0
 	begin
 		TestSession.sessionapi(http_debug: nil)
-	rescue CloudFS::Client::Errors::Error => error
+	rescue CloudFS::RestAdapter::Errors::Error => error
 		puts error
 		puts error.class
 		puts error.code if error.respond_to?(:code)

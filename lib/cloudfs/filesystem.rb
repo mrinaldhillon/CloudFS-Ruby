@@ -14,20 +14,20 @@ module CloudFS
 			@root ||= get_root
 		end
 
-		# @param client [Client] cloudfs RESTful api object
+    # @param client [RestAdapter] cloudfs RESTful api object
 		# @raise [Client::Errors::ArgumentError]
 		def initialize(client)
-			fail Client::Errors::ArgumentError, 
-				"invalid client, input type must be Client" unless client.is_a?(Client)
-				@client = client
+			fail RestAdapter::Errors::ArgumentError,
+				"invalid client, input type must be Client" unless client.is_a?(RestAdapter)
+				@rest_adapter = client
 		end
 		
 		# Get root object of filesystem
 		# @return [Folder] represents root folder of filesystem
 		# @raise Client::Errors::SessionNotLinked, Client::Errors::ServiceError
 		def get_root
-				response = @client.get_folder_meta("/")
-				FileSystemCommon.create_item_from_hash(@client, **response)
+				response = @rest_adapter.get_folder_meta("/")
+				FileSystemCommon.create_item_from_hash(@rest_adapter, **response)
 		end
 
 		# List contents of a folder in end-user's filesystem
@@ -39,10 +39,10 @@ module CloudFS
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::InvalidItemError]
 		def list(item: nil)
-			if (Client::Utils.is_blank?(item) || item.is_a?(String))
-				response = @client.list_folder(path: item, depth: 1)
+			if (RestAdapter::Utils.is_blank?(item) || item.is_a?(String))
+				response = @rest_adapter.list_folder(path: item, depth: 1)
 				FileSystemCommon.create_items_from_hash_array(response, 
-						@client, parent: item)
+						@rest_adapter, parent: item)
 			else
 				item.list
 			end
@@ -62,14 +62,14 @@ module CloudFS
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
 		#		Client::Errors::OperationNotAllowedError]
-		# @see Item#move_to
+    # @see Item#move
 		def move(items, destination, exists: 'RENAME')
-			fail Client::Errors::ArgumentError, 
+			fail RestAdapter::Errors::ArgumentError,
 				"Invalid input, expected items" unless items
 
 			response = []
 			Array(items).each do |item|
-				response << item.move_to(destination, exists: exists)
+				response << item.move(destination, exists: exists)
 			end
 			response
 		end
@@ -85,14 +85,14 @@ module CloudFS
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
 		#		Client::Errors::OperationNotAllowedError]
-		# @see Item#copy_to
+    # @see Item#copy
 		def copy(items, destination, exists: 'RENAME')
-			fail Client::Errors::ArgumentError, 
+			fail RestAdapter::Errors::ArgumentError,
 				"Invalid input, expected array of items" unless items
 			
 			response = []
 			Array(items).each do |item|
-				response << item.copy_to(destination, exists: exists)
+				response << item.copy(destination, exists: exists)
 			end
 			response
 		end
@@ -114,7 +114,7 @@ module CloudFS
 		# @see #restore Restore items
 		# @see Item#restore Restore an item
 		def delete(items, force: false, commit: false, raise_exception: false)
-			fail Client::Errors::ArgumentError, 
+			fail RestAdapter::Errors::ArgumentError,
 				"Invalid input, expected array of items" unless items
 
 			responses = []
@@ -139,9 +139,9 @@ module CloudFS
 		#		Client::Errors::OperationNotAllowedError]
 		def restore_item(item, destination_url, exists)
 			if item.is_a?(String)
-				response = @client.browse_trash(path: item)
+				response = @rest_adapter.browse_trash(path: item)
 				properties = response.fetch(:meta)
-				item = FileSystemCommon.create_item_from_hash(@client, 
+				item = FileSystemCommon.create_item_from_hash(@rest_adapter,
 					in_trash: true, **properties)
 			end
 			
@@ -168,7 +168,7 @@ module CloudFS
 		#		Client::Errors::OperationNotAllowedError]
 		# @see Item#restore
 		def restore(items, destination: nil, exists: 'FAIL')
-			fail Client::Errors::ArgumentError, 
+			fail RestAdapter::Errors::ArgumentError,
 				"Invalid input, expected items" unless items
 
 			FileSystemCommon.validate_item_state(destination)
@@ -184,10 +184,10 @@ module CloudFS
 		# @return [Array<File, Folder>] items in trash
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
-		def trash
-			response = @client.browse_trash.fetch(:items)
+		def list_trash
+			response = @rest_adapter.browse_trash.fetch(:items)
 			FileSystemCommon.create_items_from_hash_array(response, 
-					@client, in_trash: true)
+					@rest_adapter, in_trash: true)
 		end
 	
 		# List versions of file
@@ -197,13 +197,13 @@ module CloudFS
 		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
 		# @see Item#versions
 		def list_file_versions(item)
-			fail Client::Errors::ArgumentError, 
-				"Invalid input, expected Item or string path" if Client::Utils.is_blank?(item)
+			fail RestAdapter::Errors::ArgumentError,
+				"Invalid input, expected Item or string path" if RestAdapter::Utils.is_blank?(item)
 
 			if item.is_a?(String)
-				response = @client.list_file_versions(item)
+				response = @rest_adapter.list_file_versions(item)
 				FileSystemCommon.create_items_from_hash_array(response, 
-						@client, parent: item)
+						@rest_adapter, parent: item)
 			else
 				item.versions
 			end
@@ -212,9 +212,9 @@ module CloudFS
 		# List shares created by end-user
 		# @return [Array<Share>] shares
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError]
-		def shares
-			response = @client.list_shares
-			FileSystemCommon.create_items_from_hash_array(response, @client)
+		def list_shares
+			response = @rest_adapter.list_shares
+			FileSystemCommon.create_items_from_hash_array(response, @rest_adapter)
 		end
 
 		# Create share of paths in user's filesystem
@@ -224,7 +224,7 @@ module CloudFS
 		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
 		#		Client::Errors::OperationNotAllowedError]
 		def create_share(items)
-			fail Client::Errors::ArgumentError, 
+			fail RestAdapter::Errors::ArgumentError,
 				"Invalid input, expected items or paths" unless items
 
 			paths = []	
@@ -233,8 +233,8 @@ module CloudFS
 				paths << FileSystemCommon.get_item_url(item)
 			end
 
-			response = @client.create_share(paths)
-			FileSystemCommon.create_item_from_hash(@client, **response)
+			response = @rest_adapter.create_share(paths)
+			FileSystemCommon.create_item_from_hash(@rest_adapter, **response)
 		end
 
 		# Fetches share associated with share key.
@@ -245,20 +245,20 @@ module CloudFS
 		#		Client::Errors::ArgumentError]
 		#	@note	This method is intended for retrieving share from another user
 		def retrieve_share(share_key, password: nil)
-			fail Client::Errors::ArgumentError, 
-				"Invalid input, expected items or paths" if Client::Utils.is_blank?(share_key)
+			fail RestAdapter::Errors::ArgumentError,
+				"Invalid input, expected items or paths" if RestAdapter::Utils.is_blank?(share_key)
 
-			@client.unlock_share(share_key, password) if password
-			response = @client.browse_share(share_key).fetch(:share)
-			FileSystemCommon.create_item_from_hash(@client, **response)
+			@rest_adapter.unlock_share(share_key, password) if password
+			response = @rest_adapter.browse_share(share_key).fetch(:share)
+			FileSystemCommon.create_item_from_hash(@rest_adapter, **response)
 		end
 
 		def get_item(item_path)
-			fail Client::Errors::ArgumentError, 
-				"Invalid input, expected item path" if Client::Utils.is_blank?(item_path)
+			fail RestAdapter::Errors::ArgumentError,
+				"Invalid input, expected item path" if RestAdapter::Utils.is_blank?(item_path)
 
 			if item_path.is_a?(String)
-				FileSystemCommon.get_item(@client, item_path)
+				FileSystemCommon.get_item(@rest_adapter, item_path)
 			else
 				return nil
 			end

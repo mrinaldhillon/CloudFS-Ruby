@@ -100,7 +100,7 @@ if __FILE__ == $0
 		client = TestAuthApi.get_client
 		TestAuthApi.authenticate(client)
 		TestFileApi.api(client)
-	rescue Bitcasa::Client::Errors::Error => error
+	rescue CloudFS::RestAdapter::Errors::Error => error
 		puts error
 		puts error.class
 		puts error.code if error.respond_to?(:code)

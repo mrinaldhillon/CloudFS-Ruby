@@ -190,7 +190,7 @@ module CloudFS
 				@changed_properties[:application_data].merge!(hash)
 		end
 
-		# @param client [Client] RESTful Client instance
+    # @param client [RestAdapter] RESTful Client instance
 		# @param parent [Item, String] default: ("/") parent folder item or url
 		# @param in_trash [Boolean] set true to specify item exists in trash
 		# @param in_share [Boolean] set true to specify item exists in share
@@ -213,10 +213,10 @@ module CloudFS
 		# @raise [Client::Errors::ArgumentError]
 		def initialize(client, parent: nil, in_trash: false, 
 				in_share: false, old_version: false, **properties)
-			fail Client::Errors::ArgumentError, 
-				"Invalid client, input type must be CloudFS::Client" unless client.is_a?(Client)
+			fail RestAdapter::Errors::ArgumentError,
+				"Invalid client, input type must be CloudFS::Client" unless client.is_a?(RestAdapter)
 			
-			@client = client
+			@rest_adapter = client
 			set_item_properties(parent: parent, in_trash: in_trash, 
 					in_share: in_share, old_version: old_version, **properties)	
 		end
@@ -227,11 +227,11 @@ module CloudFS
 				in_share: false, old_version: false, **params)
 			# id, type and name are required instance variables
 			@id = params.fetch(:id) {
-				fail Client::Errors::ArgumentError, "Provide item id"}
+				fail RestAdapter::Errors::ArgumentError, "Provide item id"}
 			@type = params.fetch(:type) {
-				fail Client::Errors::ArgumentError, "Provide item type"}
+				fail RestAdapter::Errors::ArgumentError, "Provide item type"}
 			@name = params.fetch(:name) {
-				fail Client::Errors::ArgumentError, "Provide item name"}
+				fail RestAdapter::Errors::ArgumentError, "Provide item name"}
 
 			@type = "folder" if @type == "root"	
 			@parent_id = params[:parent_id]
@@ -299,7 +299,7 @@ module CloudFS
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
 		#		Client::Errors::OperationNotAllowedError]
-		def move_to(destination, name: nil, exists: 'RENAME')
+		def move(destination, name: nil, exists: 'RENAME')
 			FileSystemCommon.validate_item_state(self)
 			FileSystemCommon.validate_item_state(destination)
 	
@@ -307,9 +307,9 @@ module CloudFS
 			name ||= @name
 		
 			if @type == "folder"
-				response = @client.move_folder(@url, destination_url, name, exists: exists)
+				response = @rest_adapter.move_folder(@url, destination_url, name, exists: exists)
 			else
-				response = @client.move_file(@url, destination_url, name, exists: exists)
+				response = @rest_adapter.move_file(@url, destination_url, name, exists: exists)
 			end
 				# Overwrite this item's properties with Moved Item's properties
 				set_item_properties(parent: destination_url, **response)	
@@ -328,7 +328,7 @@ module CloudFS
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
 		#		Client::Errors::OperationNotAllowedError]
-		def copy_to(destination, name: nil, exists: 'RENAME')
+		def copy(destination, name: nil, exists: 'RENAME')
 			FileSystemCommon.validate_item_state(self)
 			FileSystemCommon.validate_item_state(destination)
 
@@ -336,13 +336,13 @@ module CloudFS
 			name = @name unless name
 		
 			if @type == "folder"
-				response = @client.copy_folder(@url, destination_url, 
+				response = @rest_adapter.copy_folder(@url, destination_url,
 						name, exists: exists)
 			else
-				response = @client.copy_file(@url, destination_url, 
+				response = @rest_adapter.copy_file(@url, destination_url,
 						name, exists: exists)
 			end
-				FileSystemCommon.create_item_from_hash(@client, 
+				FileSystemCommon.create_item_from_hash(@rest_adapter,
 						parent: destination_url, **response)
 		end
 
@@ -368,7 +368,7 @@ module CloudFS
 			if @in_trash
 				# @review NOOP if commit is false since item is already in trash, return true
 				if commit
-					@client.delete_trash_item(path: @url)
+					@rest_adapter.delete_trash_item(path: @url)
 					@exists = false
 					@in_trash = false
 				end
@@ -376,9 +376,9 @@ module CloudFS
 			end
 
 			if @type == "folder"
-				@client.delete_folder(@url, force: force, commit: commit)
+				@rest_adapter.delete_folder(@url, force: force, commit: commit)
 			else
-				@client.delete_file(@url, commit: commit)
+				@rest_adapter.delete_file(@url, commit: commit)
 			end
 		
 			if commit
@@ -391,8 +391,8 @@ module CloudFS
 			end	
 				changed_properties_reset	
 			true
-			rescue Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-				Client::Errors::OperationNotAllowedError, Client::Errors::InvalidItemError
+			rescue RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+				RestAdapter::Errors::OperationNotAllowedError, RestAdapter::Errors::InvalidItemError
 				raise $! if raise_exception == true
 				false
 		end
@@ -402,11 +402,11 @@ module CloudFS
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError]
 		def get_properties_from_server
 			if @in_trash == true
-				properties = @client.browse_trash(path: @url).fetch(:meta)
+				properties = @rest_adapter.browse_trash(path: @url).fetch(:meta)
 			elsif @type == "folder"
-				properties = @client.get_folder_meta(@url)
+				properties = @rest_adapter.get_folder_meta(@url)
 			else
-				properties = @client.get_file_meta(@url)
+				properties = @rest_adapter.get_file_meta(@url)
 			end
 		end
 
@@ -445,20 +445,20 @@ module CloudFS
 		def set_restored_item_properties(destination_url, exists)
 			begin
 				parent_url = @application_data[:_bitcasa_original_path]
-				properties = FileSystemCommon.get_item_properties_from_server(@client, 
+				properties = FileSystemCommon.get_item_properties_from_server(@rest_adapter,
 						parent_url, @id, @type)
 			rescue
 				raise $! if exists == "FAIL"
 
 				if exists == "RESCUE"
 					parent_url = destination_url
-					properties = FileSystemCommon.get_item_properties_from_server(@client, 
+					properties = FileSystemCommon.get_item_properties_from_server(@rest_adapter,
 							parent_url, @id, @type)
 				elsif exists == "RECREATE"
-			 		response = FileSystemCommon.get_properties_of_named_path(@client, 
+			 		response = FileSystemCommon.get_properties_of_named_path(@rest_adapter,
 							destination_url)
 					parent_url = response[:url] 
-					properties = FileSystemCommon.get_item_properties_from_server(@client,
+					properties = FileSystemCommon.get_item_properties_from_server(@rest_adapter,
 						 	parent_url,	@id, @type)
 				end
 			end
@@ -491,18 +491,18 @@ module CloudFS
 		#		item.restore(folderobj, exists: 'RESCUE')
 		#		item.restore("/depth1/depth2", exists: 'RECREATE')
 		def restore(destination: nil, exists: 'FAIL', raise_exception: false)
-			fail Client::Errors::OperationNotAllowedError, 
+			fail RestAdapter::Errors::OperationNotAllowedError,
 				"Item needs to be in trash for Restore operation" unless @in_trash
 			FileSystemCommon.validate_item_state(destination)
 
 			destination_url = FileSystemCommon.get_folder_url(destination)	
-			@client.recover_trash_item(@url, destination: destination_url, restore: exists)
+			@rest_adapter.recover_trash_item(@url, destination: destination_url, restore: exists)
 			
 			set_restored_item_properties(destination_url, exists)
 			true
-			rescue Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-				Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
-				Client::Errors::OperationNotAllowedError
+			rescue RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+				RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+				RestAdapter::Errors::OperationNotAllowedError
 				raise $! if raise_exception == true
 				false
 		end
@@ -526,9 +526,9 @@ module CloudFS
 			fail OperationNotAllowedError, 
 				"Opertaion not allowed for item of type #{@type}" unless @type == "file"
 				
-			response = @client.list_file_versions(@url, start_version: start_version, 
+			response = @rest_adapter.list_file_versions(@url, start_version: start_version,
 					stop_version: stop_version, limit: limit)
-			FileSystemCommon.create_items_from_hash_array(response, @client, 
+			FileSystemCommon.create_items_from_hash_array(response, @rest_adapter,
 					parent: @url, in_share: @in_share, in_trash: @in_trash, old_version: true)
 		end
 
@@ -544,13 +544,13 @@ module CloudFS
 		#		Client::Errors::OperationNotAllowedError]
 		def save(version_conflict: 'FAIL')
 			FileSystemCommon.validate_item_state(self)
-			return self if Client::Utils.is_blank?(@changed_properties)
+			return self if RestAdapter::Utils.is_blank?(@changed_properties)
 
 			if @type == "folder"
-				response = @client.alter_folder_meta(@url, @version, 
+				response = @rest_adapter.alter_folder_meta(@url, @version,
 						version_conflict: version_conflict, **@changed_properties)
 			else
-				response = @client.alter_file_meta(@url, @version, 
+				response = @rest_adapter.alter_file_meta(@url, @version,
 						version_conflict: version_conflict, **@changed_properties)
 			end
 

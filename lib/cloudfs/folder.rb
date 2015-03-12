@@ -51,12 +51,12 @@ module CloudFS
 			
 			if upload_io == false
 				response = ::File.open(source, "r") do |file|
-					@client.upload(@url, file, name: name, exists: exists)
+					@rest_adapter.upload(@url, file, name: name, exists: exists)
 				end
 			else
-				response = @client.upload(@url, source, name: name, exists: exists)
+				response = @rest_adapter.upload(@url, source, name: name, exists: exists)
 			end
-			FileSystemCommon.create_item_from_hash(@client, 
+			FileSystemCommon.create_item_from_hash(@rest_adapter,
 						parent: @url, **response)
 		end
 

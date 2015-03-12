@@ -44,7 +44,7 @@ module CloudFS
 	#		blocker methods like wait for async operations,
 	#		chunked/streaming upload i.e. chunked upload(not sure if server supports), 
 	#		StringIO, String upload, debug
-	class Client
+	class RestAdapter
 
 		# Creates Client instance that manages rest api calls to CloudFS service
 		#
@@ -540,7 +540,7 @@ module CloudFS
 				"Invalid argument, must pass path" if Utils.is_blank?(path)
 			
 			version_conflict = 
-			Constants::VERSION_CONFLICT.fetch(version_conflict.to_sym) {
+			Constants::VERSION_EXISTS.fetch(version_conflict.to_sym) {
 			 		fail Errors::ArgumentError, "Invalid value for version-conflict" }
 			uri = set_uri_params(endpoint, name: path, operation: "meta")
 			
@@ -922,18 +922,18 @@ module CloudFS
 		def recover_trash_item(path, restore: 'FAIL', destination: nil)
 			fail Errors::ArgumentError, 
 				"Invalid argument, must pass valid path" if Utils.is_blank?(path)
-			restore = Constants::RESTORE.fetch(restore.to_sym) { 
+			restore = Constants::RESTORE_METHOD.fetch(restore.to_sym) {
 				fail Errors::ArgumentError, "Invalid value for restore" }
 			
 			uri = set_uri_params(Constants::ENDPOINT_TRASH, name: path)
 			
 			form = { :'restore' => restore }
-			if restore == Constants::RESTORE[:RESCUE]
+			if restore == Constants::RESTORE_METHOD[:RESCUE]
 				unless Utils.is_blank?(destination)
 					destination = prepend_path_with_forward_slash(destination)
 					form[:'rescue-path'] = destination
 				end
-			elsif restore == Constants::RESTORE[:RECREATE]
+			elsif restore == Constants::RESTORE_METHOD[:RECREATE]
 					unless Utils.is_blank?(destination)
 					destination = prepend_path_with_forward_slash(destination)
 					form[:'recreate-path'] = destination

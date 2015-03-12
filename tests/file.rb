@@ -65,12 +65,12 @@ module TestFile
 	def item_operations(parent_root, parent_folder, file)
 		puts "\nFile item operations ######################"
 		debug "\nCopy file #{file.name} to file_copy"
-		file_copy = file.copy_to(parent_folder, name: "file_copy")
+		file_copy = file.copy(parent_folder, name: "file_copy")
 		debug "name: #{file_copy.name}"
 		debug "url: #{file_copy.url}"
 
 		debug "\nMove file #{file.name} to file_moved"
-		file.move_to(parent_folder, name: "file_moved")
+		file.move(parent_folder, name: "file_moved")
 		debug "name: #{file.name}"
 		debug "url: #{file.url}"
 
@@ -127,8 +127,8 @@ module TestFile
 			debug "version: #{item.version}"
 		end
 		begin
-			items.first.move_to(parent_root)		
-		rescue CloudFS::Client::Errors::OperationNotAllowedError => error
+			items.first.move(parent_root)
+		rescue CloudFS::RestAdapter::Errors::OperationNotAllowedError => error
 			debug error.message
 		end
 		puts "End File item operations ##############################"
@@ -196,7 +196,7 @@ if __FILE__ == $0
 	begin
 		session = TestSession.setup
 		TestFile.api(session, test_debug: false)
-	rescue CloudFS::Client::Errors::Error => error
+	rescue CloudFS::RestAdapter::Errors::Error => error
 		debug error
 		debug error.class
 		debug error.code if error.respond_to?(:code)

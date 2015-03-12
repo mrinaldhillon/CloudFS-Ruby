@@ -4,7 +4,7 @@ require 'openssl'
 require 'multi_json'
 
 module CloudFS
-	class Client
+	class RestAdapter
 		#	@private
 		# Utility functions module, used to handle common tasks
 		module Utils 

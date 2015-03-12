@@ -45,7 +45,7 @@ module TestFileSystem
 		debug "\nCreate Share"
 		share = fs.create_share(test_folder)
 		debug "\nList Shares"
-		shares = fs.shares
+		shares = fs.list_shares
 		shares.each do |share|
 			list_share(share)
 		end
@@ -237,7 +237,7 @@ if __FILE__ == $0
 	begin
 		session = TestSession.setup
 		TestFileSystem.api(session, test_debug: false)
-	rescue CloudFS::Client::Errors::Error
+	rescue CloudFS::RestAdapter::Errors::Error
 		debug error
 		debug error.class
 		debug error.code if error.respond_to?(:code)

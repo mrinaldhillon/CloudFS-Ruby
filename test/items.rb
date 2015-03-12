@@ -25,7 +25,7 @@ end
 if __FILE__ == $0
 	begin
 		test_item_api
-	rescue Bitcasa::Client::Errors::Error
+	rescue CloudFS::RestAdapter::Errors::Error
 		puts $!
 		puts $!.backtrace if $!.respond_to?(:backtrace)
 	end

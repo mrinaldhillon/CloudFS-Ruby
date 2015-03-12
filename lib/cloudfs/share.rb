@@ -49,7 +49,7 @@ module CloudFS
 			end
 		end
 
-		# @param client [Client] cloudfs RESTful api object
+    # @param client [RestAdapter] cloudfs RESTful api object
 		# @param [Hash] properties metadata of share
 		# @option  properties [String] :share_key
 		# @option properties [String] :share_type
@@ -59,15 +59,15 @@ module CloudFS
 		# @option properties [String] :share_size
 		# @option properties [Fixnum] :date_created
 		def initialize(client, **properties)
-			fail Client::Errors::ArgumentError, 
-				"Invalid client, input type must be CloudFS::Client" unless client.is_a?(CloudFS::Client)
-			@client = client
+			fail RestAdapter::Errors::ArgumentError,
+				"Invalid client, input type must be CloudFS::Client" unless client.is_a?(CloudFS::RestAdapter)
+			@rest_adapter = client
 			set_share_info(**properties)
 		end
 
 		# @see #initialize
 		def set_share_info(**params)
-			@share_key = params.fetch(:share_key) { fail Client::Errors::ArgumentError, 
+			@share_key = params.fetch(:share_key) { fail RestAdapter::Errors::ArgumentError,
 				"missing parameter, share_key must be defined" }
 			@type = params[:share_type]
 			@name = params[:share_name]
@@ -97,9 +97,9 @@ module CloudFS
 		#		Client::Errors::InvalidShareError]
 		def list
 			FileSystemCommon.validate_share_state(self)
-			response = @client.browse_share(@share_key).fetch(:items)
+			response = @rest_adapter.browse_share(@share_key).fetch(:items)
 			FileSystemCommon.create_items_from_hash_array(response, 
-					@client, in_share: true)
+					@rest_adapter, in_share: true)
 		end
 
 		# Delete this share
@@ -109,7 +109,7 @@ module CloudFS
 		#		Client::Errors::InvalidShareError]
 		def delete
 			FileSystemCommon.validate_share_state(self)
-			@client.delete_share(@share_key)
+			@rest_adapter.delete_share(@share_key)
 			@exists = false
 			true
 		end
@@ -123,7 +123,7 @@ module CloudFS
 		#		Client::Errors::InvalidShareError]
 		def set_password(password, current_password: nil)
 			FileSystemCommon.validate_share_state(self)
-			response = @client.alter_share_info(@share_key, 
+			response = @rest_adapter.alter_share_info(@share_key,
 					current_password: current_password, password: password)
 			set_share_info(**response)
 			self
@@ -136,7 +136,7 @@ module CloudFS
 		#		Client::Errors::InvalidShareError]
 		def unlock(password)
 			FileSystemCommon.validate_share_state(self)
-			@client.unlock_share(@share_key, password)
+			@rest_adapter.unlock_share(@share_key, password)
 			self
 		end
 
@@ -151,7 +151,7 @@ module CloudFS
 		def save(password: nil)
 			FileSystemCommon.validate_share_state(self)
 			if @changed_properties[:name]
-				response = @client.alter_share_info(@share_key, 
+				response = @rest_adapter.alter_share_info(@share_key,
 					current_password: password, name: @changed_properties[:name])
 				set_share_info(**response)
 			end
@@ -170,10 +170,10 @@ module CloudFS
 		#		Client::Errors::InvalidShareError]
 		def receive(path: nil, exists: 'RENAME')
 			FileSystemCommon.validate_share_state(self)
-			response = @client.receive_share(@share_key, 
+			response = @rest_adapter.receive_share(@share_key,
 					path: path, exists: exists)
 			FileSystemCommon.create_items_from_hash_array(response, 
-					@client, parent: path)
+					@rest_adapter, parent: path)
 		end
 
 		# Refresh this share to latest state
@@ -187,7 +187,7 @@ module CloudFS
 		#		Client::Errors::InvalidShareError]
 		def refresh
 			FileSystemCommon.validate_share_state(self)
-			response = @client.browse_share(share_key).fetch(:share)
+			response = @rest_adapter.browse_share(share_key).fetch(:share)
 			set_share_info(**response)
 			self
 		end

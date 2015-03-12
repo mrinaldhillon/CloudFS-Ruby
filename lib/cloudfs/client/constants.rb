@@ -1,5 +1,5 @@
 module CloudFS
-	class Client
+	class RestAdapter
 		#	@private
 		# Declares cloudfs constants
 		module Constants
@@ -66,11 +66,11 @@ module CloudFS
 			# QUERY_OPS_PROMOTE for promote
 			QUERY_OPS_PROMOTE = "promote"
 			# EXISTS for fail, overwrite, rename & reuse actions
-			EXISTS = {FAIL: "fail", OVERWRITE: "overwrite", RENAME: "rename", REUSE: "reuse"}
+			EXISTS = {FAIL: "fail", OVERWRITE: "overwrite", RENAME: "rename"}
 			# VERSION_CONFLICT for fail or ignore.
-			VERSION_CONFLICT = {FAIL: "fail", IGNORE: "ignore"}
+			VERSION_EXISTS = {FAIL: "fail", IGNORE: "ignore"}
 			# RESTORE fail, rescue & recreate action
-			RESTORE = {FAIL: "fail", RESCUE: "rescue", RECREATE: "recreate"}
+			RESTORE_METHOD = {FAIL: "fail", RESCUE: "rescue", RECREATE: "recreate"}
 		end
 	end
 end

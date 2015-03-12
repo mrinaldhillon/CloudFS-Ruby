@@ -1,7 +1,7 @@
 require_relative 'utils'
 
 module CloudFS
-	class Client
+	class RestAdapter
 		# Defines exceptional behavior.
 		# {Error} is base class of all exceptions raised by CloudFS SDK.
 		# {Errors::ServiceError} is base class of all errors returned by CloudFS service.
@@ -11,16 +11,16 @@ module CloudFS
 		#
 		#	@example
 		#		begin
-		#			client.ping
-		#		rescue Client::Errors::SessionNotLinked
-		#			client.authenticate(username, password)
+		#			rest_adapter.ping
+		#		rescue RestAdapter::Errors::SessionNotLinked
+		#			rest_adapter.authenticate(username, password)
 		#			retry
-		#		rescue Client::Errors::ServiceError => error
+		#		rescue RestAdapter::Errors::ServiceError => error
 		#			puts error.message
 		#			puts error.request
 		#			puts error.response
 		#			puts error.code
-		#		rescue Client::Errors::Error => error
+		#		rescue RestAdapter::Errors::Error => error
 		#			puts error.message
 		#			puts error.backtrace
 		#		end
