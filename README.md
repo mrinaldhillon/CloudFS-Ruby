@@ -14,9 +14,15 @@ Cloud Storage Platform](https://www.bitcasa.com/) and build scalable solutions.
 
 ##	Installation
 
-	$ gem install cloudfs_sdk
+	$ gem install cloudfs
 
 ## Using the SDK
+
+# in Gemfile
+    gem 'cloudfs'
+
+# in application
+    require 'cloudfs'
 
 Use the credentials you obtained from Bitcasa admin console to create a client session. This session can be used for all future requests to Bitcasa.
 
