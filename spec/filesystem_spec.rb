@@ -15,7 +15,7 @@ describe CloudFS::FileSystem do
 
  describe "Listing items" do
   before do
-   @list_folder = @test_folder.create_folder('list_test', exists: 'OVERWRITE')
+   @list_folder = @test_folder.create_folder('list_test')
   end
 
   after do
@@ -29,5 +29,44 @@ describe CloudFS::FileSystem do
   end
  end
 
+ describe "Moving items" do
+   before do
+     @move_target = @test_folder.create_folder('move_test_target')
+     @move_source = @test_folder.create_folder('move_test_source')
+     @move_item1 = @move_source.create_folder('move_item1')
+     @move_item2 = @move_source.create_folder('move_item2')
+   end
+   
+   after do
+     @move_target.delete
+     @move_source.delete
+   end
+
+   it "#move" do
+     @subject.move([@move_item1, @move_item2], @move_target)
+     @move_source.list.length.must_equal 0
+     @move_target.list.length.must_equal 2
+   end
+ end 
+
+ describe "Copying items" do
+   before do
+     @copy_target = @test_folder.create_folder('copy_test_target')
+     @copy_source = @test_folder.create_folder('copy_test_source')
+     @copy_item1 = @copy_source.create_folder('copy_item1')
+     @copy_item2 = @copy_source.create_folder('copy_item2')
+   end
+   
+   after do
+     @copy_target.delete
+     @copy_source.delete
+   end
+
+   it "#copy" do
+     @subject.copy([@copy_item1, @copy_item2], @copy_target)
+     @copy_source.list.length.must_equal 2
+     @copy_target.list.length.must_equal 2
+   end
+ end 
 
 end
