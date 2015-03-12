@@ -16,14 +16,14 @@ module CloudFS
 	
 		# Upload file to this folder
 		#
-		# @param source [String, #read&#pos&#pos=] local file path, in-memory string, 
+		# @param file_system_path [String, #read&#pos&#pos=] local file path, in-memory string,
 		#		an io object for example StringIO, File, Tempfile.
 		# @param name [String] default: nil, name of uploaded file, must be set 
-		#		if source does not respond to #path unless source is local file path
+		#		if file_system_path does not respond to #path unless file_system_path is local file path
 		# @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME') 
 		#		action to take in case of a conflict with an existing folder.
 		#	@param upload_io [Boolean] default: false, 
-		#		if set to false, source is considered to be a local file path
+		#		if set to false, file_system_path is considered to be a local file path
 		#
 		# @return [File] instance refrence to uploaded file
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
@@ -46,19 +46,36 @@ module CloudFS
 		#			io.write("this is test stringio")
 		#			file = folder.upload(io, name: 'testfile.txt', upload_io: true)
 		#			io.close
-		def upload(source, name: nil, exists: 'FAIL', upload_io: false)
+		def upload(file_system_path, name: nil, exists: 'FAIL', upload_io: false)
 			FileSystemCommon.validate_item_state(self)
 			
 			if upload_io == false
-				response = ::File.open(source, "r") do |file|
+				response = ::File.open(file_system_path, "r") do |file|
 					@rest_adapter.upload(@url, file, name: name, exists: exists)
 				end
 			else
-				response = @rest_adapter.upload(@url, source, name: name, exists: exists)
+				response = @rest_adapter.upload(@url, file_system_path, name: name, exists: exists)
 			end
 			FileSystemCommon.create_item_from_hash(@rest_adapter,
 						parent: @url, **response)
-		end
+    end
+
+    # Create folder under this container
+    #
+    # @param name [String] name of folder to be created
+    # @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME') action to take
+    #		if the item already exists
+    #
+    # @return [Folder] instance
+    # @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+    #		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+    #		RestAdapter::Errors::OperationNotAllowedError]
+    def create_folder(name, exists: 'FAIL')
+      FileSystemCommon.validate_item_state(self)
+
+      properties = @rest_adapter.create_folder(name, path: @url, exists: exists)
+      FileSystemCommon.create_item_from_hash(@rest_adapter, parent: @url, **properties)
+    end
 
 		#	@return [String]
 		#	@!visibility private

@@ -35,6 +35,11 @@ module CloudFS
 		
 		# @return [String] absolute path of item in user's account	
 		attr_reader :url
+
+    # @return [String] absolute path of item in user's account
+    def path
+      @url
+    end
 	
 		# name of item	
 		# @overload name
@@ -79,10 +84,10 @@ module CloudFS
 		attr_accessor :application_data
 			
 		# see #name
-		def name=(value)
+		def name=(new_name)
 			FileSystemCommon.validate_item_state(self)
-			@name = value
-			@changed_properties[:name] = value
+			@name = new_name
+			@changed_properties[:name] = new_name
 		end
 		
 		# @see #extension
@@ -350,10 +355,10 @@ module CloudFS
 		# @note Updates this item if operation is successful
 		# @note	Locally changed properties get discarded
 		#
-		# @param force [Boolean] (false) set true to delete non-empty folder		
-		# @param commit [Boolean] (false) set true to remove item permanently, 
-		#		else will be moved to trash, Client::Errors::InvalidItemError is raised
-		#		for subsequent operation if commit: true
+    # @param commit [Boolean] (false) set true to remove item permanently,
+    #		else will be moved to trash, Client::Errors::InvalidItemError is raised
+    #		for subsequent operation if commit: true
+    # @param force [Boolean] (false) set true to delete non-empty folder
 		# @param raise_exception [Boolean] (false)
 		#		method suppresses exceptions and returns false if set to false, 
 		#			added so that consuming application can control behaviour
@@ -362,7 +367,7 @@ module CloudFS
 		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
 		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
 		#		if raise_exception is true
-		def delete(force: false, commit: false, raise_exception: false)
+		def delete(commit: false, force: false, raise_exception: false)
 			FileSystemCommon.validate_item_state(self, in_trash: false)
 
 			if @in_trash
@@ -376,7 +381,7 @@ module CloudFS
 			end
 
 			if @type == "folder"
-				@rest_adapter.delete_folder(@url, force: force, commit: commit)
+				@rest_adapter.delete_folder(@url, commit: commit, force: force)
 			else
 				@rest_adapter.delete_file(@url, commit: commit)
 			end
@@ -597,7 +602,25 @@ module CloudFS
 			self.class.equal?(item.class)	&&
 			item.respond_to?(:id) && 
 			item.id == @id
-		end
+    end
+
+    # Changes the attributes of a given file or folder.
+    #
+    # @param values [Hash] attribute changes.
+    # @param if_conflict [String] ('FAIL', 'IGNORE') action to take
+    #		if the version on this item does not match the version on the server.
+    def change_attributes(values={}, if_conflict: Constants::VERSION_EXISTS[:FAIL])
+      if @type == "folder"
+        response = @rest_adapter.alter_folder_meta(@url, @version,
+                                                   version_conflict: if_conflict, ** values)
+      else
+        response = @rest_adapter.alter_file_meta(@url, @version,
+                                                 version_conflict: if_conflict, ** values)
+      end
+
+      parent_url = ::File.dirname(@url)
+      set_item_properties(parent: parent_url, ** response)
+    end
 
 		alias == eql?
 		private :set_item_properties, :changed_properties_reset, 

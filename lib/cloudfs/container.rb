@@ -38,24 +38,6 @@ module CloudFS
 					@rest_adapter, parent: @url, in_trash: @in_trash)
 		end
 
-		# Create folder under this container
-		#
-		# @param name [String] name of folder to be created
-		# @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME') action to take
-		#		if the item already exists
-		#
-		# @return [Folder] instance
-		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
-		#		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
-		#		RestAdapter::Errors::OperationNotAllowedError]
-		def create_folder(name, exists: 'FAIL')
-			FileSystemCommon.validate_item_state(self)	
-			
-			properties = @rest_adapter.create_folder(name, path: @url, exists: exists)
-			FileSystemCommon.create_item_from_hash(@rest_adapter, parent: @url, **properties)
-		end
-
-		
 		# overriding inherited properties that are not not valid for folder
 		private :extension, :extension=, :mime, :mime=, :blocklist_key, 
 			:blocklist_id, :size, :versions, :old_version?

@@ -16,7 +16,13 @@ module CloudFS
 	#		file.read {|chunk| puts chunk} #=> "this is some buffer till end of file"
 	# 	file.download(local_folder_path, filename: new_name_of_downloaded_file)
 	class File < Item
-		
+
+    #	@!attribute [rw] mime.
+    attr_accessor :mime
+
+    # @return [String] the size.
+    attr_reader :size
+
 		# @see Item#initialize
 		def initialize(client, parent: nil, in_trash: false, 
 				in_share: false, old_version: false, **properties)
@@ -29,7 +35,7 @@ module CloudFS
 		
 		# Download this file to local directory
 		#
-		# @param local_path [String] path of local folder
+		# @param local_destination_path [String] path of local folder
 		# @param filename [String] name of downloaded file, default is name of this file
 		#
 		#	@return [true]
@@ -40,16 +46,16 @@ module CloudFS
 		# @review overwrites a file if it exists at local path
 		#	@note Internally uses chunked stream download, 
 		#		max size of in-memory chunk is 16KB.
-		def download(local_path, filename: nil)
+		def download(local_destination_path, filename: nil)
 			fail RestAdapter::Errors::ArgumentError,
-				"local path is not a valid directory" unless ::File.directory?(local_path)
+				"local path is not a valid directory" unless ::File.directory?(local_destination_path)
 			FileSystemCommon.validate_item_state(self)
 
 			filename ||= @name
-			if local_path[-1] == '/'
-				local_filepath = "#{local_path}#{filename}"
+			if local_destination_path[-1] == '/'
+				local_filepath = "#{local_destination_path}#{filename}"
 			else
-				local_filepath = "#{local_path}/#{filename}"
+				local_filepath = "#{local_destination_path}/#{filename}"
 			end
 			::File.open(local_filepath, 'wb') do |file|
 				@rest_adapter.download(@url) { |buffer| file.write(buffer) }

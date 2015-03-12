@@ -56,7 +56,7 @@ module CloudFS
 			end
 		end
 
-    # @param client [RestAdapter] cloudfs RESTful api object
+    # @param rest_adapter [RestAdapter] cloudfs RESTful api object
 		# @param [Hash] properties metadata of user
 		# @option properties [String] :username
 		# @option properties [Fixnum] :created_at in milliseconds since epoch
@@ -65,11 +65,11 @@ module CloudFS
 		# @option properties [String] :email
 		# @option properties [Fixnum] :last_login in milliseconds since epoch
 		# @option properties [String] :id
-		def initialize(client, **properties)
+		def initialize(rest_adapter, **properties)
 			fail RestAdapter::Errors::ArgumentError,
-				"invalid client type #{client.class}, expected CloudFS::Client" unless client.is_a?(CloudFS::RestAdapter)
+				"invalid rest_adapter type #{rest_adapter.class}, expected CloudFS::Client" unless rest_adapter.is_a?(CloudFS::RestAdapter)
 
-			@rest_adapter = client
+			@rest_adapter = rest_adapter
 			set_user_info(**properties)
 		end
 

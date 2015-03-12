@@ -31,16 +31,16 @@ module CloudFS
 
 		#	@!attribute [r] user
 		# @return [User] profile of end-user linked with this session
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::OperationNotAllowedError]
 		def user
 			@user ||= get_user 
 		end
 
 		#	@!attribute [r] account
 		# @return [Account] end-user's account linked with this session
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError,
-		#		Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::OperationNotAllowedError]
 		def account
 			@account ||= get_account
 		end
@@ -94,8 +94,8 @@ module CloudFS
 		# @param password [String] end-user's password
 		#
 		# @return [true]
-		# @raise [Client::Errors::ServiceError, 
-		#		Client::Errors::ArgumentError, Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::OperationNotAllowedError]
 		def authenticate(username, password)
 			validate_session
 			fail RestAdapter::Errors::OperationNotAllowedError,
@@ -114,7 +114,7 @@ module CloudFS
 		#
 		# @note	CloudFS objects remain valid only till session is linked, 
 		#		once unlinked all RESTful objects generated through this session 
-		#		are expected to raise {Client::Errors::SessionNotLinked} exception 
+		#		are expected to raise {RestAdapter::Errors::SessionNotLinked} exception
 		#		for any RESTful operation.
 		#	@note Session cannot be re-authenticated once unlinked.
 		#
@@ -173,7 +173,7 @@ module CloudFS
 					first_name: first_name, last_name: last_name)
 				Account.new(@rest_adapter, **response)
 			ensure
-				admin_client.unlink			
+				admin_client.unlink
 			end
 		end
 	
@@ -199,14 +199,14 @@ module CloudFS
 		#		actions from (non-inclusive)
 		#
 		# @return [Array<Hash>] action history items
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::OperationNotAllowedError]
 		def action_history(start: -10, stop: nil)
 			validate_session
 			@rest_adapter.list_history(start: start, stop: stop)
 		end
 		
-		# @raise [Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::OperationNotAllowedError]
 		def validate_session
 			fail RestAdapter::Errors::OperationNotAllowedError,
 				"This session has been unlinked, initialize new session instance" if @unlinked
