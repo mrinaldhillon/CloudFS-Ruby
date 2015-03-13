@@ -21,7 +21,7 @@ Sessions represent connections to CloudFS. They use a set of credentials that co
 [Session](CloudFS/Session.html) - Performs regular file system operations.
 
 ```ruby
-//code
+session = CloudFS::Session.new(Configuration::CLIENT_ID, Configuration::SECRET, Configuration::HOST)
 ```
 
 A user can be linked to the session by authenticating using a username and a password.
@@ -67,17 +67,17 @@ account = create_account(session, user, password)
 + [Get Root Folder](CloudFS/FileSystem.html#root-instance_method)	
 
 	```ruby
-	Folder root = session.filesystem.root
+	root = session.filesystem.root
 	```
 + [Get Specific Folder](CloudFS/FileSystem.html#get_item-instance_method)
 	
 	```ruby
-	Folder folder = //code
+	folder = session.filesystem.get_item('folder_path')
 	```  
 + [Get Specific File](CloudFS/FileSystem.html#get_item-instance_method)
 	
 	```ruby
-	//code
+	file = session.filesystem.get_item('file_path')
 	```
 + [List Items](CloudFS/FileSystem.html#list-instance_method)
 
@@ -92,7 +92,7 @@ items = session.filesystem.list(item: item)
 You can list down the contents of a folder. Below example shows how to retrieve contents of the root folder.
 
 ```ruby
-//code
+items = session.filesystem.list_trash(item: item)
 ```
 
 + [Get Shares](CloudFS/FileSystem.html#list_shares-instance_method)
@@ -100,7 +100,7 @@ You can list down the contents of a folder. Below example shows how to retrieve 
 You can list down available shares. Below example shows how to retrieve the list of shares.
 
 ```ruby
-//code
+items = session.filesystem.list_shares(item: item)
 ```
 
 + [Create Share](CloudFS/FileSystem.html#create_share-instance_method)
@@ -108,15 +108,7 @@ You can list down available shares. Below example shows how to retrieve the list
 You can create a share by providing the path as shown in below example. A passworded share cannot be used for anything if the password is not provided. It doesn’t make sense to create a share unless the developer has the password.
 
 ```ruby
-//code
-```
-
-+ [Get Specific Share](CloudFS/FileSystem.html#retrieve_share-instance_method)
-
-You can get a share by providing the share key and the password (If available). A passworded share cannot be used for anything if the password is not provided.
-
-```ruby
-//code
+share = session.filesystem.create_share('file_path/folder_path', 'new_share_password')
 ```
 
 + [Copy Items](CloudFS/FileSystem.html#copy-instance_method)
@@ -124,7 +116,7 @@ You can get a share by providing the share key and the password (If available). 
 You can copy a list of items to a new location in the file system. If the contents in the destination folder conflicts with the copying items you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
 ```ruby
-//code
+items = session.copy([@copy_item1, @copy_item2], @copy_target)
 ```
 
 + [Move Items](CloudFS/FileSystem.html#move-instance_method)
@@ -132,7 +124,7 @@ You can copy a list of items to a new location in the file system. If the conten
 You can move a list of items to a new location in the file system. If the contents in the destination folder conflicts with the moving items you can either RENAME, OVERWRITE, REUSE or FAIL the operation. 
 
 ```ruby
-//code
+items = session.move([@move_item1, @move_item2], @move_target)
 ```
 
 + [Delete Items](CloudFS/FileSystem.html#delete-instance_method)
@@ -140,7 +132,7 @@ You can move a list of items to a new location in the file system. If the conten
  You can specify a list of items that needs to be deleted. This will return a list of Success/fail status of each item once the operation completes.
 
 ```ruby
-//code
+item = session.filesystem.delete(@file)
 ```
 
 ###Folder Operations
@@ -152,7 +144,7 @@ You can move a list of items to a new location in the file system. If the conten
 You can list the contents of a folder. This will return a list of top level folders and items in the specified folder.
 
 ```ruby
-//code
+items = session.filesystem.list(item: item)
 ```
 
 + [Change Folder Attributes](CloudFS/Item.html#change_attributes-instance_method)
@@ -160,7 +152,9 @@ You can list the contents of a folder. This will return a list of top level fold
 You can change the attributes of a Folder by providing a hash map of field names and values. An example is given below.
 
 ```ruby
-//code
+folder_attributes = Hash.new
+folder_attributes[:name] = 'changed_folder_name'
+@folder.change_attributes(** folder_attributes)
 ```
 
 + [Copy Folder](CloudFS/Item.html#copy_to-instance_method)
@@ -168,7 +162,7 @@ You can change the attributes of a Folder by providing a hash map of field names
 You can copy a folder to a new location in the file system. If the destination conflicts with the copying folder you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
 ```ruby
-//code
+@copy_folder.copy(@copy_target.path)
 ```
 
 + [Move Folder](CloudFS/Item.html#move-instance_method)
@@ -176,14 +170,14 @@ You can copy a folder to a new location in the file system. If the destination c
 You can move a folder to a new location in the file system. If the destination conflicts with the moving folder you can either RENAME, OVERWRITE or FAIL the operation.
 
 ```ruby
-//code
+@move_source.move(@move_target.path)
 ```
 + [Delete Folder](CloudFS/Item.html#delete-instance_method)
 
 You can perform the delete operation on a folder. This will return the Success/fail status of the operation.
 
 ```ruby
-//code
+status = @folder.delete
 ```
 
 + [Restore Folder](CloudFS/Item.html#restore-instance_method)
@@ -191,7 +185,7 @@ You can perform the delete operation on a folder. This will return the Success/f
 You can restore a folder from the trash. This will return the Success/fail status of the operation.
 
 ```ruby
-//code
+  @delete_folder.restore(destination: @delete_folder.path)
 ```
 
 + [Create Sub Folder](CloudFS/Container.html#create_folder-instance_method)
@@ -199,7 +193,7 @@ You can restore a folder from the trash. This will return the Success/fail statu
 You can create a sub folder in a specific folder. If the folder already has a sub folder with the given name, the operation will fail.
 
 ```ruby
-//code
+@folder.create_folder('test_folder')
 ```
 
 + [Upload File](CloudFS/Folder.html#upload-instance_method)
@@ -207,7 +201,7 @@ You can create a sub folder in a specific folder. If the folder already has a su
 You can upload a file from your local file system into a specific folder. If the destination conflicts, you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
 ```ruby
-//code
+file = @folder.upload(file_path)
 ```
 
 ###File Operations
@@ -219,7 +213,9 @@ You can upload a file from your local file system into a specific folder. If the
 You can change the attributes of a File by providing a hash map of field names and values. An example is given below.
 
 ```ruby
-//code
+file_attributes = Hash.new
+file_attributes[:name] = 'changed_file_name'
+@file.change_attributes(** file_attributes)
 ```
 
 + [Copy File](CloudFS/Item.html#copy-instance_method)
@@ -227,7 +223,7 @@ You can change the attributes of a File by providing a hash map of field names a
 You can copy a file to a new location in the file system. If the destination conflicts with the copying file you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
 ```ruby
-//code
+@file.copy('destination_path', exists: 'OVERWRITE')
 ```
 
 + [Move File](CloudFS/Item.html#move-instance_method)
@@ -235,7 +231,7 @@ You can copy a file to a new location in the file system. If the destination con
 You can move a file to a new location in the file system. If the destination conflicts with the moving file you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
 ```ruby
-//code
+@file.move('destination_path', exists: 'OVERWRITE')
 ```
 
 + [Delete File](CloudFS/Item.html#delete-instance_method)
@@ -243,7 +239,7 @@ You can move a file to a new location in the file system. If the destination con
 You can perform the delete operation on a file. This will return the Success/fail status of the operation.
 
 ```ruby
-//code
+@file.delete
 ```
 
 + [Restore File](CloudFS/Item.html#restore-instance_method)
@@ -251,7 +247,7 @@ You can perform the delete operation on a file. This will return the Success/fai
 You can restore a file from the trash. he restore method can be set to either FAIL, RESCUE or RECREATE. This will return the Success/fail status of the operation.
 
 ```ruby
-//code
+@file.restore('destination_path', exists: 'OVERWRITE')
 ```
 
 + [Download File](CloudFS/File.html#download-instance_method)
@@ -259,41 +255,26 @@ You can restore a file from the trash. he restore method can be set to either FA
 You can download a file to your local file system.
 
 ```ruby
-//code
+@file.download(@local_file_path)
 ```
 
-+ [Get Download URL]()
-
-You can get the download URL of a File.
-
-```ruby
-//code
-```
 
 + [Get File Versions](CloudFS/Item.html#versions-instance_method)
 
 You can retrieve the versions of a specific file.
 
 ```ruby
-//code
+file_version = @file.version
 ```
 
 ###Share Operations
 
 **Note:**  You need to create a session in order to perform share operations.
 
-+ [Change Share Attributes](CloudFS/Item.html#change_attributes-instance_method)
-
-You can change the attributes of a Share by providing a hash map of field names and values. An example is given below.
-
-```ruby
-//code
-```
-
 + [Delete Share](CloudFS/Share.html#delete-instance_method)
 
 ```ruby
-//code
+@share_file.delete
 ```
 
 + [Set Share Password](CloudFS/Share.html#set_password-instance_method)
@@ -301,5 +282,5 @@ You can change the attributes of a Share by providing a hash map of field names 
 Sets the share password. Old password is only needed if one exists.
 
 ```ruby
-//code
+@share_file.set_password('share_password')
 ```
