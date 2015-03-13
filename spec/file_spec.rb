@@ -22,6 +22,13 @@ describe CloudFS::File do
 		end
 	end
 
+	describe 'get extension' do
+		it '#extension' do
+			@filetype = @file.extension
+			@filetype.must_equal 'txt'
+		end
+	end
+
 	describe 'get size' do
 		it '#size' do
 			@filesize = @file.size
