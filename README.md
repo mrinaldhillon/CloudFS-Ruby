@@ -73,8 +73,8 @@ account = create_account(session, user, password)
 ```
 
 ##	Debug
-*	In order to log http wire trace initialize session with http_debug option 
-	with an object that responds to #<<. For example STDERR, STDOUT, File etc.
+
+*	In order to log http wire trace initialize session with http_debug option with an object that responds to #<<. For example STDERR, STDOUT, File etc.
 
 ```ruby
 session = CloudFS::Session.new(clientid, secret, host, http_debug: STDERR)
