@@ -45,15 +45,6 @@ module CloudFS
 			@account ||= get_account
 		end
 
-		#	@!attribute [rw] admin_credentials
-		# Credentials of Paid CloudFS User's admin account
-		# @overload admin_credentials
-		# 	@return [String]
-		# @overload admin_credentials(admin_client_id, admin_client_secret)
-		def admin_credentials
-			@admin_credentials.map{|k, v| "#{k}['#{v}']"}.join(' ')
-		end
-
     #	@see #admin_credentials
     def admin_credentials(admin_client_id, admin_client_secret)
       @admin_credentials[:clientid] = admin_client_id ? admin_client_id : nil
