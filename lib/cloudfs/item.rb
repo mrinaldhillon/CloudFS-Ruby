@@ -609,7 +609,7 @@ module CloudFS
     # @param values [Hash] attribute changes.
     # @param if_conflict [String] ('FAIL', 'IGNORE') action to take
     #		if the version on this item does not match the version on the server.
-    def change_attributes(values={}, if_conflict: Constants::VERSION_EXISTS[:FAIL])
+    def change_attributes(values, if_conflict: 'FAIL')
       if @type == "folder"
         response = @rest_adapter.alter_folder_meta(@url, @version,
                                                    version_conflict: if_conflict, ** values)
