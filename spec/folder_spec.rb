@@ -17,11 +17,6 @@ describe CloudFS::Folder do
       @create_folder_rename = @test_folder.create_folder('folder_test', exists: 'RENAME')
       @create_folder_rename.type.must_equal 'folder'
       @create_folder_rename.name.must_equal 'folder_test (1)'
-
-      # @create_folder = @test_folder.create_folder('folder_test', exists: 'REUSE')
-      # @create_folder.type.must_equal 'folder'
-      # @create_folder.name.must_equal 'folder_test'
-
     end
 
     after do
@@ -64,7 +59,7 @@ describe CloudFS::Folder do
     end
 
     it '#upload' do
-      @file = @create_folder.upload(@file_path, name:'file_test.txt')
+      @file = @create_folder.upload(@file_path)
       @file.type.must_equal 'file'
       @file.name.must_equal 'file_test.txt'
     end
