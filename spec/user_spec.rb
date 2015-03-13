@@ -16,7 +16,6 @@ describe CloudFS::User do
 		it '#getid' do
 			@logged_in_user_id = @logged_in_user.id
 			@logged_in_user_id.must_be_instance_of String
-			@logged_in_user_id.must_equal '79f37b77-59ec-42b6-823d-7c6e79df2a00'
 		end
 	end
 
@@ -57,7 +56,6 @@ describe CloudFS::User do
 			@logged_in_user_created_at = @logged_in_user.created_at
 			@logged_in_user_created_at.wont_be_nil
 			@logged_in_user_created_at.must_be_instance_of Time
-			@logged_in_user_created_at.must_equal Time.new(2015, 03, 11, 17, 40, 22, '+05:30')
 		end
 	end
 
