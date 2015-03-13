@@ -1,17 +1,17 @@
 require_relative 'version'
-require_relative 'client/connection'
-require_relative 'client/constants'
-require_relative 'client/utils'
-require_relative 'client/error'
+require_relative 'rest_adapter/connection'
+require_relative 'rest_adapter/constants'
+require_relative 'rest_adapter/utils'
+require_relative 'rest_adapter/error'
 
 module CloudFS
 	# Provides low level mapping apis to Bitcasa CloudFS Service
 	#
 	#	@author Mrinal Dhillon
-	#	Maintains an instance of RESTful {Client::Connection}, 
-	#		since Client::Connection instance is MT-safe 
+	#	Maintains an instance of RESTful {RestAdapter::Connection}, 
+	#		since RestAdapter::Connection instance is MT-safe 
 	#		and can be called from several threads without synchronization 
-	#		after setting up an instance, same behaviour is expected from Client class. 
+	#		after setting up an instance, same behaviour is expected from RestAdapter class. 
 	#		Should use single instance for all calls per remote server accross 
 	#		multiple threads for performance.
 	#
@@ -21,23 +21,23 @@ module CloudFS
 	#
 	# @example
 	#		Authenticate
-	#		client = CloudFS::Client.new(clientid, secret, host)
-	#		client.authenticate(username, password)
-	#		client.ping
+	#		rest_adapter = CloudFS::RestAdapter.new(clientid, secret, host)
+	#		rest_adapter.authenticate(username, password)
+	#		rest_adapter.ping
 	#	@example Upload file
 	#		::File.open(local_file_path, "r") do |file|
-	#			client.upload(path, file, 
+	#			rest_adapter.upload(path, file, 
 	#					name: 'somename', exists: 'FAIL')
 	#		end
 	#	@example Download file
 	#		Download into buffer
-	#		buffer = client.download(path, startbyte: 0, bytecount: 1000)
+	#		buffer = rest_adapter.download(path, startbyte: 0, bytecount: 1000)
 	#
 	#		Streaming download i.e. chunks are synchronously returned as soon as available
 	#			preferable for large files download:
 	#
 	#		::File.open(local_filepath, 'wb') do |file|
-	#				client.download(path) { |buffer| file.write(buffer) }
+	#				rest_adapter.download(path) { |buffer| file.write(buffer) }
 	#		end
 	#	
 	# @optimize Support async requests, 
@@ -46,7 +46,7 @@ module CloudFS
 	#		StringIO, String upload, debug
 	class RestAdapter
 
-		# Creates Client instance that manages rest api calls to CloudFS service
+		# Creates RestAdapter instance that manages rest api calls to CloudFS service
 		#
 		# @param clientid [String] application clientid
 		# @param secret [String] application secret
@@ -91,7 +91,7 @@ module CloudFS
 					agent_name: "#{Constants::HTTP_AGENT_NAME} (#{CloudFS::VERSION})") 
 		end
 
-		# @return [Boolean] whether client can make authenticated 
+		# @return [Boolean] whether rest_adapter can make authenticated 
 		#		requests to cloudfs service
 		# @raise [Errors::ServiceError]
 		def linked?
@@ -101,7 +101,7 @@ module CloudFS
 				false
 		end
 
-		# Unlinks this client object from cloudfs user's account
+		# Unlinks this rest_adapter object from cloudfs user's account
 		# @note this will disconnect all keep alive connections and internal sessions
 		def unlink
 			if @access_token
@@ -111,7 +111,7 @@ module CloudFS
 			true
 		end
 
-		#	Obtains an OAuth2 access token that authenticates an end-user for this client
+		#	Obtains an OAuth2 access token that authenticates an end-user for this rest_adapter
 		# @param username [String] username of the end-user
 		# @param password [String] password of the end-user
 		# @return [true]
@@ -477,7 +477,7 @@ module CloudFS
 		# @param path [String] folder path
 		# @param version [Fixnum] version number of folder
 		# @param version_conflict [String] ('FAIL', 'IGNORE') action to take 
-		#		if the version on the client does not match the version on the server
+		#		if the version on the rest_adapter does not match the version on the server
 		#
 		#	@param [Hash] properties
 		# @option properties [String] :name (nil) new name
@@ -499,7 +499,7 @@ module CloudFS
 		# @param path [String] file path
 		# @param version [Fixnum] version number of file
 		# @param version_conflict [String] ('FAIL', 'IGNORE') action to take 
-		#		if the version on client does not match the version on server
+		#		if the version on rest_adapter does not match the version on server
 		#
 		#	@param [Hash] properties
 		# @option properties [String] :name (nil) new name
@@ -522,7 +522,7 @@ module CloudFS
 		# @param path [String] file/folder path
 		# @param version [String, Fixnum] version number of file/folder
 		# @param version_conflict [String] ('FAIL', 'IGNORE') action to take 
-		#		if the version on the client does not match the version on the server
+		#		if the version on the rest_adapter does not match the version on the server
 		#
 		#	@param [Hash] properties
 		# @option properties [String] :name (nil) new name
@@ -571,15 +571,15 @@ module CloudFS
 		# @example
 		#		Upload file
 		# 		::File.open(local_file_path, "r") do |file|
-		#				client.upload(path, file, name: "testfile.txt")
+		#				rest_adapter.upload(path, file, name: "testfile.txt")
 		#			end
 		#	@example
 		#		Upload string
-		#			client.upload(path, "This is upload string", name: 'testfile.txt')
+		#			rest_adapter.upload(path, "This is upload string", name: 'testfile.txt')
 		#		Upload stream
 		#			io = StringIO.new
 		#			io.write("this is test stringio")
-		#			client.upload(path, io, name: 'testfile.txt')
+		#			rest_adapter.upload(path, io, name: 'testfile.txt')
 		#			io.close
 		#	@note	name must be set if source does not respond to #path
 		# @todo reuse fallback and reuse attributes
@@ -627,13 +627,13 @@ module CloudFS
 		# @raise [Errors::SessionNotLinked, Errors::ServiceError, Errors::ArgumentError]
 		#	@example
 		#		Download into buffer
-		#		buffer = client.download(path, startbyte: 0, bytecount: 1000)
+		#		buffer = rest_adapter.download(path, startbyte: 0, bytecount: 1000)
 		#
 		#		Streaming download i.e. chunks are synchronously returned as soon as available
 		#			preferable for large files download:
 		#
 		#		::File.open(local_filepath, 'wb') do |file|
-		#				client.download(path) { |buffer| file.write(buffer) }
+		#				rest_adapter.download(path) { |buffer| file.write(buffer) }
 		#		end
 		def download(path, startbyte: 0, bytecount: 0, &block)
 			fail Errors::ArgumentError, 
@@ -1042,7 +1042,7 @@ module CloudFS
 		#		parses cloudfs service response into hash
 		#
 		# @param response [Hash]
-		#		@see CloudFS::Client::Connection#request
+		#		@see CloudFS::RestAdapter::Connection#request
 		#
 		# @return [Hash] response from cloudfs service
 		def parse_response(response)

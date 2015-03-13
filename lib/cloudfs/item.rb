@@ -46,8 +46,8 @@ module CloudFS
 		# 	@return [String] name of item
 		# @overload name=(value)
 		# 	@param value [String]
-		# 	@raise [Client::Errors::InvalidItemError, 
-		#			Client::Errors::OperationNotAllowedError]
+		# 	@raise [RestAdapter::Errors::InvalidItemError,
+		#			RestAdapter::Errors::OperationNotAllowedError]
 		attr_accessor :name
 
 		# mime type of file
@@ -57,8 +57,8 @@ module CloudFS
 		# 	Set new file mime type by including extension in the name of the file. 
 		#		CloudFS will assign the mime type based on the name
 		# 	@param value [String]
-		# 	@raise [Client::Errors::InvalidItemError, 
-		#			Client::Errors::OperationNotAllowedError]
+		# 	@raise [RestAdapter::Errors::InvalidItemError,
+		#			RestAdapter::Errors::OperationNotAllowedError]
 		attr_accessor :mime
 	
 		#	extension of item of type file	
@@ -68,8 +68,8 @@ module CloudFS
 		#		Set new file extension by including the extension in the name of file. 
 		#		CloudFS will assign the extension based on the name
 		# 	@param value [String]
-		# 	@raise [Client::Errors::InvalidItemError, 
-		#			Client::Errors::OperationNotAllowedError]
+		# 	@raise [RestAdapter::Errors::InvalidItemError,
+		#			RestAdapter::Errors::OperationNotAllowedError]
 		attr_accessor :extension 
 		
 		# extra metadata of item	
@@ -78,8 +78,8 @@ module CloudFS
 		# @overload application_data=(hash={})
 		# 	Sets application_data
 		# 	@param hash [Hash]
-		# 	@raise [Client::Errors::InvalidItemError, 
-		#			Client::Errors::OperationNotAllowedError]
+		# 	@raise [RestAdapter::Errors::InvalidItemError,
+		#			RestAdapter::Errors::OperationNotAllowedError]
 		# 	@todo support update of nested hash, currently overwrites nested hash	
 		attr_accessor :application_data
 			
@@ -105,8 +105,8 @@ module CloudFS
 		#		@return [Time] creation time
 		# @overload date_created=(value)
 		# 	@param value [Time] new creation time
-		# 	@raise [Client::Errors::InvalidItemError, 
-		#			Client::Errors::OperationNotAllowedError]
+		# 	@raise [RestAdapter::Errors::InvalidItemError,
+		#			RestAdapter::Errors::OperationNotAllowedError]
 		def date_created
 			if @date_created
 				Time.at(@date_created)
@@ -128,8 +128,8 @@ module CloudFS
 		#		@return [Time] time when metadata was last modified
 		# @overload date_meta_last_modified=(value)
 		# 	@param value [Time] new metadata modification time
-		# 	@raise [Client::Errors::InvalidItemError, 
-		#			Client::Errors::OperationNotAllowedError]
+		# 	@raise [RestAdapter::Errors::InvalidItemError,
+		#			RestAdapter::Errors::OperationNotAllowedError]
 		def date_meta_last_modified
 			if @date_meta_last_modified
 				Time.at(@date_meta_last_modified)
@@ -151,8 +151,8 @@ module CloudFS
 		#		@return [Time] time when content was last modified
 		# @overload date_content_last_modified=(value)
 		# 	@param value [Time] new content modification time
-		# 	@raise [Client::Errors::InvalidItemError, 
-		#			Client::Errors::OperationNotAllowedError]
+		# 	@raise [RestAdapter::Errors::InvalidItemError,
+		#			RestAdapter::Errors::OperationNotAllowedError]
 		def date_content_last_modified
 			if @date_content_last_modified
 				Time.at(@date_content_last_modified)
@@ -195,7 +195,7 @@ module CloudFS
 				@changed_properties[:application_data].merge!(hash)
 		end
 
-    # @param client [RestAdapter] RESTful Client instance
+    # @param rest_adapter [RestAdapter] RESTful Client instance
 		# @param parent [Item, String] default: ("/") parent folder item or url
 		# @param in_trash [Boolean] set true to specify item exists in trash
 		# @param in_share [Boolean] set true to specify item exists in share
@@ -215,13 +215,13 @@ module CloudFS
 		# @option properties [String] :blocklist_id (nil) applicable to item type file only
 		# @option properties [Fixnum] :size (nil) applicable to item of type file only
 		# @option properties [Hash] :application_data ({}) extra metadata of item
-		# @raise [Client::Errors::ArgumentError]
-		def initialize(client, parent: nil, in_trash: false, 
+		# @raise [RestAdapter::Errors::ArgumentError]
+		def initialize(rest_adapter, parent: nil, in_trash: false,
 				in_share: false, old_version: false, **properties)
 			fail RestAdapter::Errors::ArgumentError,
-				"Invalid client, input type must be CloudFS::Client" unless client.is_a?(RestAdapter)
+				"Invalid RestAdaper, input type must be CloudFS::RestAdapter" unless rest_adapter.is_a?(RestAdapter)
 			
-			@rest_adapter = client
+			@rest_adapter = rest_adapter
 			set_item_properties(parent: parent, in_trash: in_trash, 
 					in_share: in_share, old_version: old_version, **properties)	
 		end
@@ -301,9 +301,9 @@ module CloudFS
 		#		action to take in case of a conflict with an existing folder, default 'RENAME'
 		#
 		# @return [Item] returns self
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
-		#		Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+		#		RestAdapter::Errors::OperationNotAllowedError]
 		def move(destination, name: nil, exists: 'RENAME')
 			FileSystemCommon.validate_item_state(self)
 			FileSystemCommon.validate_item_state(destination)
@@ -330,9 +330,9 @@ module CloudFS
 		#		action to take in case of a conflict with an existing folder, default 'RENAME'
 		# @return [Item] new instance of copied item
 		#
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
-		#		Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+		#		RestAdapter::Errors::OperationNotAllowedError]
 		def copy(destination, name: nil, exists: 'RENAME')
 			FileSystemCommon.validate_item_state(self)
 			FileSystemCommon.validate_item_state(destination)
@@ -356,7 +356,7 @@ module CloudFS
 		# @note	Locally changed properties get discarded
 		#
     # @param commit [Boolean] (false) set true to remove item permanently,
-    #		else will be moved to trash, Client::Errors::InvalidItemError is raised
+    #		else will be moved to trash, RestAdapter::Errors::InvalidItemError is raised
     #		for subsequent operation if commit: true
     # @param force [Boolean] (false) set true to delete non-empty folder
 		# @param raise_exception [Boolean] (false)
@@ -364,8 +364,8 @@ module CloudFS
 		#			added so that consuming application can control behaviour
 		#
 		# @return [Boolean] whether operation is successful
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::InvalidItemError, RestAdapter::Errors::OperationNotAllowedError]
 		#		if raise_exception is true
 		def delete(commit: false, force: false, raise_exception: false)
 			FileSystemCommon.validate_item_state(self, in_trash: false)
@@ -404,7 +404,7 @@ module CloudFS
 		
 		# Get this item's properties from server
 		# @return [Hash] metadata of this item
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError]
 		def get_properties_from_server
 			if @in_trash == true
 				properties = @rest_adapter.browse_trash(path: @url).fetch(:meta)
@@ -420,8 +420,8 @@ module CloudFS
 		#	@note	Locally changed properties get discarded
 		# @return [Item] returns self
 		#
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::InvalidItemError, RestAdapter::Errors::OperationNotAllowedError]
 		def refresh
 			FileSystemCommon.validate_item_state(self, in_trash: false, in_share: false)
 		
@@ -445,8 +445,8 @@ module CloudFS
 		# @param exists [String] ('FAIL', 'RESCUE', 'RECREATE') 
 		#		action to take if the recovery operation encounters issues, default 'FAIL'
 		#
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::ArgumentError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::ArgumentError]
 		def set_restored_item_properties(destination_url, exists)
 			begin
 				parent_url = @application_data[:_bitcasa_original_path]
@@ -483,9 +483,9 @@ module CloudFS
 		#			added so that consuming application can control behaviour
 		# 
 		# @return [Boolean] true/false
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
-		#		Client::Errors::OperationNotAllowedError] if raise_exception is true
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+		#		RestAdapter::Errors::OperationNotAllowedError] if raise_exception is true
 		#
 		# @note exist: 'RECREATE' with named path is expensive operation 
 		#		as items in named path hierarchy are traversed 
@@ -523,8 +523,8 @@ module CloudFS
 		#		It can be negative to list items prior to given start version
 		#
 		# @return [Array<Item>] listed versions
-		#	@raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
+		#	@raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::InvalidItemError, RestAdapter::Errors::OperationNotAllowedError]
 		#	@review confirm if versions should be allowed for items in trash, in share 
 		def versions(start_version: 0, stop_version: nil, limit: 10)
 			FileSystemCommon.validate_item_state(self, in_trash: false, in_share: false)
@@ -544,9 +544,9 @@ module CloudFS
 		#		if the version on this item does not match the version on the server
 		# 
 		# @return [Item] returns self
-		#	@raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
-		#		Client::Errors::OperationNotAllowedError]
+		#	@raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+		#		RestAdapter::Errors::OperationNotAllowedError]
 		def save(version_conflict: 'FAIL')
 			FileSystemCommon.validate_item_state(self)
 			return self if RestAdapter::Utils.is_blank?(@changed_properties)

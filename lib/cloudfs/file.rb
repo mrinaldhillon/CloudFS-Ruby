@@ -27,7 +27,7 @@ module CloudFS
 		attr_reader :extension
 
 		# @see Item#initialize
-		def initialize(client, parent: nil, in_trash: false, 
+		def initialize(rest_adapter, parent: nil, in_trash: false,
 				in_share: false, old_version: false, **properties)
 			fail RestAdapter::Errors::ArgumentError,
 		 	"Invalid item of type #{properties[:type]}" unless properties[:type] == "file"
@@ -43,9 +43,9 @@ module CloudFS
 		#
 		#	@return [true]
 		#
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
-		#		Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+		#		RestAdapter::Errors::OperationNotAllowedError]
 		# @review overwrites a file if it exists at local path
 		#	@note Internally uses chunked stream download, 
 		#		max size of in-memory chunk is 16KB.
@@ -70,7 +70,7 @@ module CloudFS
 		#
 		#	@param bytecount [Fixnum] number of bytes to read from current access position 
 		# @return [String] buffer
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError]
 		def read_to_buffer(bytecount)
 			buffer = @rest_adapter.download(@url, startbyte: @offset, bytecount: bytecount)
 			@offset += buffer.nil? ? 0 : buffer.size
@@ -82,7 +82,7 @@ module CloudFS
 		#	@param bytecount [Fixnum] number of bytes to read from current access position 
 		# @yield [String] chunk of data as soon as available, 
 		#		chunksize size may vary each time
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError]
 		def read_to_proc(bytecount, &block)
 			@rest_adapter.download(@url, startbyte: @offset, bytecount: bytecount) do |chunk|
 				@offset += chunk.nil? ? 0 : chunk.size
@@ -98,9 +98,9 @@ module CloudFS
 		# @yield [String] chunk data as soon as available, 
 		#		chunksize size may vary each time
 		# @return [String] buffer, unless block is given
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
-		#		Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+		#		RestAdapter::Errors::OperationNotAllowedError]
 		#
 		#	@note	Pass block to stream chunks as soon as available, 
 		#		preferable for large reads.
@@ -145,7 +145,7 @@ module CloudFS
 		#		If whence is 2, the file offset shall be set to the size of 
 		#			the file plus offset
 		# @return [Fixnum] resulting offset
-		# @raise [Client::Errors::ArgumentError]
+		# @raise [RestAdapter::Errors::ArgumentError]
 		def seek(offset, whence: 0)
 			
 			case whence

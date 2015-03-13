@@ -180,17 +180,17 @@ module CloudFS
 
 		# Action history lists history of file, folder, and share actions
 		#
-		# @param start [Fixnum] version number to start listing historical actions from, 
+    # @param start_version [Fixnum] version number to start listing historical actions from,
 		#		default -10. It can be negative in order to get most recent actions.
-		# @param stop [Fixnum] version number to stop listing historical 
+    # @param stop_version [Fixnum] version number to stop listing historical
 		#		actions from (non-inclusive)
 		#
 		# @return [Array<Hash>] action history items
 		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
 		#		RestAdapter::Errors::OperationNotAllowedError]
-		def action_history(start: -10, stop: nil)
+		def action_history(start_version: -10, stop_version: nil)
 			validate_session
-			@rest_adapter.list_history(start: start, stop: stop)
+			@rest_adapter.list_history(start: start_version, stop: stop_version)
 		end
 		
 		# @raise [RestAdapter::Errors::OperationNotAllowedError]

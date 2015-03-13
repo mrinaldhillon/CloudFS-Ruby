@@ -9,7 +9,7 @@ module CloudFS
 	class FileSystem
 		# @!attribute [r] root
 		# @return [Folder] root folder of this end-user's filesystem
-		# @raise [RestAdapter::Errors::SessionNotLinked, Client::Errors::ServiceError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError]
 		def root
 			@root ||= get_root
 		end
@@ -18,7 +18,7 @@ module CloudFS
 		# @raise [RestAdapter::Errors::ArgumentError]
 		def initialize(rest_adapter)
 			fail RestAdapter::Errors::ArgumentError,
-				"invalid client, input type must be Client" unless rest_adapter.is_a?(RestAdapter)
+				"invalid RestAdapter, input type must be RestAdapter" unless rest_adapter.is_a?(RestAdapter)
 				@rest_adapter = rest_adapter
 		end
 		
@@ -36,8 +36,8 @@ module CloudFS
 		#		or url in end-user's filesystem
 		#
 		# @return [Array<Folder, File>] items under folder path
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::InvalidItemError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::InvalidItemError]
 		def list(item: nil)
 			if (RestAdapter::Utils.is_blank?(item) || item.is_a?(String))
 				response = @rest_adapter.list_folder(path: item, depth: 1)
@@ -59,9 +59,9 @@ module CloudFS
 		#	@note item at index in returned array is refrence to same object
 		#		whose properties are updated as an effect of move operation at corresponding 
 		#		index in input array 'items'
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
-		#		Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+		#		RestAdapter::Errors::OperationNotAllowedError]
     # @see Item#move
 		def move(items, destination, exists: 'RENAME')
 			fail RestAdapter::Errors::ArgumentError,
@@ -82,9 +82,9 @@ module CloudFS
 		#		of a conflict with an existing item in destination folder.
 		#
 		# @return [Array<File, Folder>] copied items
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
-		#		Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+		#		RestAdapter::Errors::OperationNotAllowedError]
     # @see Item#copy
 		def copy(items, destination, exists: 'RENAME')
 			fail RestAdapter::Errors::ArgumentError,
@@ -106,7 +106,7 @@ module CloudFS
 		#	
 		# @return [Array<Boolean>] value at index is result of delete operation 
 		#		on item at corresponding index in input array 'items'
-		# @raise [Client::Errors::ArgumentError] 
+		# @raise [RestAdapter::Errors::ArgumentError]
 		#
 		#	@note item's properties in input 'items' array are updated 
 		#		as an effect of delete operation. 
@@ -134,9 +134,9 @@ module CloudFS
 		#		if the recovery operation encounters issues
 		#
 		# @return [File, Folder] item object
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
-		#		Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+		#		RestAdapter::Errors::OperationNotAllowedError]
 		def restore_item(item, destination_url, exists)
 			if item.is_a?(String)
 				response = @rest_adapter.browse_trash(path: item)
@@ -163,9 +163,9 @@ module CloudFS
 		#		whose properties are updated as an effect of restore operation at 
 		#		corresponding index in input array 'items'
 		#
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
-		#		Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+		#		RestAdapter::Errors::OperationNotAllowedError]
 		# @see Item#restore
 		def restore(items, destination: nil, exists: 'FAIL')
 			fail RestAdapter::Errors::ArgumentError,
@@ -193,8 +193,8 @@ module CloudFS
 		# List versions of file
 		# @param item [File, String]
 		# @return [Array<File>] versions of file
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::InvalidItemError, RestAdapter::Errors::OperationNotAllowedError]
 		# @see Item#versions
 		def list_file_versions(item)
 			fail RestAdapter::Errors::ArgumentError,
@@ -220,9 +220,9 @@ module CloudFS
 		# Create share of paths in user's filesystem
 		# @param items [Array<File, Folder, String>] file, folder or url
 		# @return [Share] instance
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::ArgumentError, Client::Errors::InvalidItemError, 
-		#		Client::Errors::OperationNotAllowedError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+		#		RestAdapter::Errors::OperationNotAllowedError]
 		def create_share(items)
 			fail RestAdapter::Errors::ArgumentError,
 				"Invalid input, expected items or paths" unless items
@@ -240,9 +240,9 @@ module CloudFS
     # Create share of path in user's filesystem
     # @param path [String] file, folder or url
     # @return [Share] instance
-    # @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError,
-    #		Client::Errors::ArgumentError, Client::Errors::InvalidItemError,
-    #		Client::Errors::OperationNotAllowedError]
+    # @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+    #		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+    #		RestAdapter::Errors::OperationNotAllowedError]
     def create_share(path, password: nil)
       fail RestAdapter::Errors::ArgumentError,
            "Invalid input, expected item or path" unless path
@@ -258,8 +258,8 @@ module CloudFS
 		#	@param share_key [String] valid share key
 		#	@param password [String] password if share is locked
 		#	@return [Share] instance of share
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::ArgumentError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::ArgumentError]
 		#	@note	This method is intended for retrieving share from another user
 		def retrieve_share(share_key, password: nil)
 			fail RestAdapter::Errors::ArgumentError,

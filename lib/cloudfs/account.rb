@@ -70,7 +70,7 @@ module CloudFS
 		# @param [Hash] properties metadata of account
 		def initialize(rest_adapter, **properties)
 			fail RestAdapter::Errors::ArgumentError,
-				"invalid client type #{rest_adapter.class}, expected CloudFS::Client" unless rest_adapter.is_a?(CloudFS::RestAdapter)
+				"invalid RestAdapter type #{rest_adapter.class}, expected CloudFS::RestAdapter" unless rest_adapter.is_a?(CloudFS::RestAdapter)
 
 			@rest_adapter = rest_adapter
 			set_account_info(**properties)
