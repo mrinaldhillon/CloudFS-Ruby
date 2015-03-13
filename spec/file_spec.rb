@@ -78,25 +78,6 @@ describe CloudFS::File do
 			end
 		end
 
-	# describe 'file seek' do
-	# 	before do
-	# 		@initial_offset = @file.tell
-	# 	end
-	#
-	# 	it '#seek' do
-	# 		@offset_after_seek_0_whence = @file.seek(2,whence=0)
-	# 		@offset_after_seek_1_whence = @file.seek(2,whence=1)
-	# 		@offset_after_seek_2_whence	= @file.seek(2,whence=2)
-	# 		@offset_after_seek_0_whence.must_equal 2
-	# 		@offset_after_seek_1_whence.must_equal 4
-	# 		@offset_after_seek_2_whence.must_equal 11
-	# 	end
-	#
-	# 	after do
-	# 		@file.rewind
-	# 	end
-	# end
-
 	describe 'file download' do
 		before do
 			logged_in_user = ENV['USER']
@@ -117,12 +98,21 @@ describe CloudFS::File do
 			@file_exist_after_download.must_equal true
 
 		end
-	after do
-		if @file_exist_after_download == true
-			File.delete(@file_path + '/file_test.txt')
-			Dir.delete(@file_path)
+		after do
+			if @file_exist_after_download == true
+				File.delete(@file_path + '/file_test.txt')
+				Dir.delete(@file_path)
+			end
 		end
 	end
+
+	describe 'list file versions' do
+		it '#listfileversions' do
+			@file_versions = @file.versions
+			@file_versions.wont_be_nil
+			@file_versions.must_be_instance_of Array
+		end
+
 	end
 
 end
