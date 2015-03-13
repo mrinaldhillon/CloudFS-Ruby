@@ -1,6 +1,6 @@
 require_relative 'spec_helper'
 
-describe CloudFS::File do
+describe CloudFS::Folder do
   before do
     session = CloudFS::Session.new(Configuration::CLIENT_ID, Configuration::SECRET, Configuration::HOST)
     session.authenticate(Configuration::USERNAME, Configuration::PASSWORD)
