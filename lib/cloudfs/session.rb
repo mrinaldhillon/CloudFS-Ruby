@@ -49,21 +49,16 @@ module CloudFS
 		# Credentials of Paid CloudFS User's admin account
 		# @overload admin_credentials
 		# 	@return [String]
-		# @overload admin_credentials=(creds={})
-		#		@param [Hash] creds
-		#		@option creds [String] :clientid admin account clientid
-		#		@option creds [String] :secret admin account secret
-		#		@option creds [String] :host (access.bitcasa.com) admin account host
+		# @overload admin_credentials(admin_client_id, admin_client_secret)
 		def admin_credentials
 			@admin_credentials.map{|k, v| "#{k}['#{v}']"}.join(' ')
 		end
-		
-		#	@see #admin_credentials
-		def admin_credentials=(creds={})
-			@admin_credentials[:clientid] = "#{creds.fetch(:clientid, nil)}"
-			@admin_credentials[:secret] = "#{creds.fetch(:secret, nil)}"
-			@admin_credentials[:host] = "#{creds.fetch(:host, "access.bitcasa.com")}"
-		end
+
+    #	@see #admin_credentials
+    def admin_credentials(admin_client_id, admin_client_secret)
+      @admin_credentials[:clientid] = admin_client_id ? admin_client_id : nil
+      @admin_credentials[:secret] = admin_client_secret ? admin_client_secret : nil
+    end
 
 
 		# @param clientid [String] account clientid
@@ -86,6 +81,7 @@ module CloudFS
 			@rest_adapter = RestAdapter.new(clientid, secret, host, **http_conf)
 			@unlinked = false
 			@admin_credentials = {}
+      @admin_credentials[:host] = host ? host : "access.bitcasa.com"
 		end
 	
 		# Attempts to log into the end-user's filesystem, links this session to an account
