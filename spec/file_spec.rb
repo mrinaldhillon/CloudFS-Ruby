@@ -94,10 +94,18 @@ describe CloudFS::File do
 	describe 'file download' do
 		before do
 			logged_in_user = ENV['USER']
-			@file_path = '/home/' + logged_in_user + '/Projects/Ruby/cloudfs-ruby/'
+			@file_path = '/home/' + logged_in_user + '/ruby-file-download'
+
+			@local_path_exist = File.directory?(@file_path)
+
+			if @local_path_exist == false
+					Dir.mkdir(@file_path)
+			end
+
 			@file_exist_before_download = File.exist?(@file_path + '/file_test.txt')
 		end
 		it '#download' do
+			puts (Dir.pwd)
 			@file.download(@file_path)
 			@file_exist_after_download = File.exist?(@file_path + '/file_test.txt')
 			@file_exist_before_download.must_equal false
@@ -107,6 +115,7 @@ describe CloudFS::File do
 	after do
 		if @file_exist_after_download == true
 			File.delete(@file_path + '/file_test.txt')
+			Dir.delete(@file_path)
 		end
 	end
 	end
