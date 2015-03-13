@@ -6,10 +6,8 @@ Cloud Storage Platform](https://www.bitcasa.com/) and build scalable solutions.
 * [REST API Documentation](https://www.bitcasa.com/cloudfs-api-docs/)
 * [Blog](http://blog.bitcasa.com/)
 
-* Supports current set of CloudFS rest apis except following features.
-
 ##	Not Supported
-*	File upload does not support reuse exists option.
+
 *	Cannot set application_data and properties on files or folders at creation time.
 
 ##	Installation
@@ -18,11 +16,13 @@ Cloud Storage Platform](https://www.bitcasa.com/) and build scalable solutions.
 
 ## Using the SDK
 
+```ruby
 # in Gemfile
     gem 'cloudfs'
 
 # in application
     require 'cloudfs'
+```
 
 Use the credentials you obtained from Bitcasa admin console to create a client session. This session can be used for all future requests to Bitcasa.
 
@@ -34,43 +34,43 @@ session.authenticate(username, password)
 Getting the root folder
 
 ```ruby
-//Folder root = session.getFileSystem().getRoot();
+Folder root = session.filesystem.root
 ```
 
 Getting the contents of root folder
 
 ```ruby
-//Item[] itemArray = session.getFileSystem().list("");
+items = session.filesystem.list(item: item)	
 ```
+
 or
+
 ```ruby
-//Item[] itemArray = session.getFileSystem().list(root);
+itemArray = session.fileSystem.list(root);
 ```
 
 Deleting the contents of root folder
 
 ```ruby
-//session.getFileSystem().delete(itemArray);
+//code
 ```
 
 Uploading a file to root folder
 
 ```ruby
-//root.upload(pathOfFile, Exists.FAIL, listener);
+//code
 ```
 
 Download a file from root folder
 
 ```ruby
-//File fileToDownload = session.getFileSystem().getFile(pathOfFileToDownload);
-//fileToDownload.download(localDestinationPath, listener);
+//code
 ```
 
 Create user (for paid accounts only)
 
 ```ruby
-//AdminSession adminSession = new AdminSession(adminEndPoint, adminClientId, adminClientSecret);
-//Profile profile = adminSession.admin().createAccount(username, password, email, firstName, lastName);
+account = create_account(session, user, password)
 ```
 
 ##	Debug
