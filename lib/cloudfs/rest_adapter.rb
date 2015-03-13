@@ -1,8 +1,8 @@
 require_relative 'version'
-require_relative 'rest_adapter/connection'
-require_relative 'rest_adapter/constants'
-require_relative 'rest_adapter/utils'
-require_relative 'rest_adapter/error'
+require_relative 'client/connection'
+require_relative 'client/constants'
+require_relative 'client/utils'
+require_relative 'client/error'
 
 module CloudFS
 	# Provides low level mapping apis to Bitcasa CloudFS Service
