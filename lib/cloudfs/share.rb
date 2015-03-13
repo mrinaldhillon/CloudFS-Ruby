@@ -201,5 +201,23 @@ module CloudFS
 		alias inspect to_s
 
 		private :set_share_info, :changed_properties_reset
-	end	
+  end
+
+  # Changes the attributes of a given file or folder.
+  #
+  # @param values [Hash] attribute changes.
+  # @param if_conflict [String] ('FAIL', 'IGNORE') action to take
+  #		if the version on this item does not match the version on the server.
+  def change_attributes(values, if_conflict: 'FAIL')
+    if @type == "folder"
+      response = @rest_adapter.alter_folder_meta(@url, @version,
+                                                 version_conflict: if_conflict, ** values)
+    else
+      response = @rest_adapter.alter_file_meta(@url, @version,
+                                               version_conflict: if_conflict, ** values)
+    end
+
+    parent_url = ::File.dirname(@url)
+    set_item_properties(parent: parent_url, ** response)
+  end
 end
