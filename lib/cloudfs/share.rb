@@ -28,7 +28,7 @@ module CloudFS
 		# 	@return [String] name of share
 		# @overload name=(value)
 		# 	@param value [String]
-		# 	@raise [Client::Errors::InvalidShareError]
+		# 	@raise [RestAdapter::Errors::InvalidShareError]
 		def name=(value)
 			FileSystemCommon.validate_share_state(self)
 			@name = value
@@ -49,7 +49,7 @@ module CloudFS
 			end
 		end
 
-    # @param client [RestAdapter] cloudfs RESTful api object
+    # @param rest_adapter [RestAdapter] cloudfs RESTful api object
 		# @param [Hash] properties metadata of share
 		# @option  properties [String] :share_key
 		# @option properties [String] :share_type
@@ -58,10 +58,10 @@ module CloudFS
 		# @option properties [String] :short_url
 		# @option properties [String] :share_size
 		# @option properties [Fixnum] :date_created
-		def initialize(client, **properties)
+		def initialize(rest_adapter, **properties)
 			fail RestAdapter::Errors::ArgumentError,
-				"Invalid client, input type must be CloudFS::Client" unless client.is_a?(CloudFS::RestAdapter)
-			@rest_adapter = client
+				"Invalid RestAdapter, input type must be CloudFS::RestAdapter" unless rest_adapter.is_a?(CloudFS::RestAdapter)
+			@rest_adapter = rest_adapter
 			set_share_info(**properties)
 		end
 
@@ -93,8 +93,8 @@ module CloudFS
 		
 		# List items in this share
 		# @return [Array<File, Folder>] list of items
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::InvalidShareError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::InvalidShareError]
 		def list
 			FileSystemCommon.validate_share_state(self)
 			response = @rest_adapter.browse_share(@share_key).fetch(:items)
@@ -104,9 +104,9 @@ module CloudFS
 
 		# Delete this share
 		#	@return [true]
-		# @note Subsequent operations shall fail {Client::Errors::InvalidShareError}
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::InvalidShareError]
+		# @note Subsequent operations shall fail {RestAdapter::Errors::InvalidShareError}
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::InvalidShareError]
 		def delete
 			FileSystemCommon.validate_share_state(self)
 			@rest_adapter.delete_share(@share_key)
@@ -119,8 +119,8 @@ module CloudFS
 		# @param password	[String] new password for this share
 		# @param current_password [String] is required if password is already set for this share
 		# @return [Share] return self
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::InvalidShareError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::InvalidShareError]
 		def set_password(password, current_password: nil)
 			FileSystemCommon.validate_share_state(self)
 			response = @rest_adapter.alter_share_info(@share_key,
@@ -132,8 +132,8 @@ module CloudFS
 		# Unlock this share
 		# @param password	[String] password for this share
 		# @return [Share] return self
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::InvalidShareError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::InvalidShareError]
 		def unlock(password)
 			FileSystemCommon.validate_share_state(self)
 			@rest_adapter.unlock_share(@share_key, password)
@@ -146,8 +146,8 @@ module CloudFS
 		# @param password [String] current password for this share,
 		#		if has been set, it is necessary even if share has been unlocked
 		# @return [Share] returns self
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::InvalidShareError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::InvalidShareError]
 		def save(password: nil)
 			FileSystemCommon.validate_share_state(self)
 			if @changed_properties[:name]
@@ -166,8 +166,8 @@ module CloudFS
 		#		case of conflict with existing items at path
 		#
 		# @return [Array<File, Folder>] items
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::InvalidShareError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::InvalidShareError]
 		def receive(path: nil, exists: 'RENAME')
 			FileSystemCommon.validate_share_state(self)
 			response = @rest_adapter.receive_share(@share_key,
@@ -179,12 +179,12 @@ module CloudFS
 		# Refresh this share to latest state
 		#	@note Locally changed properties i.e. name get discarded
 		#
-		# @note raises Client::Errors::ServiceError if share is locked, 
+		# @note raises RestAdapter::Errors::ServiceError if share is locked,
 		#		unlock share if password is set
 		#
 		#	@return [Share] returns self
-		# @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError, 
-		#		Client::Errors::InvalidShareError]
+		# @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+		#		RestAdapter::Errors::InvalidShareError]
 		def refresh
 			FileSystemCommon.validate_share_state(self)
 			response = @rest_adapter.browse_share(share_key).fetch(:share)
@@ -196,28 +196,10 @@ module CloudFS
 		#	@!visibility private
 		def to_s
 			"#{self.class}: name: #{@name}, size: #{@size}bytes"
-		end
+    end
 
 		alias inspect to_s
 
 		private :set_share_info, :changed_properties_reset
-  end
-
-  # Changes the attributes of a given file or folder.
-  #
-  # @param values [Hash] attribute changes.
-  # @param if_conflict [String] ('FAIL', 'IGNORE') action to take
-  #		if the version on this item does not match the version on the server.
-  def change_attributes(values, if_conflict: 'FAIL')
-    if @type == "folder"
-      response = @rest_adapter.alter_folder_meta(@url, @version,
-                                                 version_conflict: if_conflict, ** values)
-    else
-      response = @rest_adapter.alter_file_meta(@url, @version,
-                                               version_conflict: if_conflict, ** values)
-    end
-
-    parent_url = ::File.dirname(@url)
-    set_item_properties(parent: parent_url, ** response)
   end
 end
