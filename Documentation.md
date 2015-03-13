@@ -5,24 +5,10 @@ Refer the [Rubydoc]() Documentation to view	class and method details.
 
 ##Getting the SDK
 
-You can get the SDK either by downloading the compiled version or by downloading the compiled version or by building the project from source. 
-
-###Download the compiled version
-
-
-###Build the project from source
-You can download the project from our repository and build it. 
-
-To checkout the latest source code: 
+You can download the SDk from Github.
 
 ```bash
 git clone https://github.com/bitcasa/CloudFS-Ruby
-```
-
-To build the project:
-
-```bash
-mvn -Dmaven.test.skip=true install
 ```
 
 ##Using the SDK
@@ -32,39 +18,32 @@ If you don't have a CloudFS API account, [register](https://www.bitcasa.com/) to
 
 Sessions represent connections to CloudFS. They use a set of credentials that consists of an end point URL, a client ID and a client secret. These credentials can be obtained via the Bitcasa admin console.
 
-There are two types of sessions,
+[Session](CloudFS/Session.html) - Performs regular file system operations.
 
-* [AdminSession]() - Performs administrative operations such as user and account management.
-
-	```
-	//code
+```ruby
+//code
 ```
-
-* [Session]() - Performs regular file system operations.
 
 A user can be linked to the session by authenticating using a username and a password.
 
-```
+```ruby
 session.authenticate(username, password)
 ```
 
 You can assert whether a user is linked to the session.
 
-```
+```ruby
 session.is_linked?
 ```
 
 The currently linked user can be unlinked from the session.
 
-```
+```ruby
 session.unlink
 ```
 
-
-
 **Note:**
 
-+  Performing actions on an unlinked session will produce an [AuthenticationException]()
 +  Only one user can be linked to a session at a time.
 
 
@@ -73,115 +52,136 @@ session.unlink
 **Note:**
 You need to create an admin session in order to perform admin operations.
 
-+ [Create Account](CloudFS/Client.html#create_account-instance_method)
-
-
++ *Create Account*
 
 You can create end users for an admin/paid account.
 
-```
+```ruby
 //code
 ```
+
 ###File System Operations
 **Note:** You need to create a session in order to perform file system operations.
 
-+ [Get items]()
-	+ [Get Root Folder]()	
 
-	```
++ [Get Root Folder](CloudFS/FileSystem.html#root-instance_method)	
+
+	```ruby
 	Folder root=-session.filesystem.root
 	```
-	+ [Get Specific Folder]()
++ [Get Specific Folder](CloudFS/FileSystem.html#root-instance_method)
 	
-	```
+	```ruby
 	Folder folder= //code
 	```  
-	+ [Get Specific File]()
++ [Get Specific File]()
 	
-	```
+	```ruby
 	//code
 	```
-+ [List Items]()
++ [List Items](CloudFS/FileSystem.html#list-instance_method)
 
 You can list down the contents of a Folder. Below example shows two approaches to retrieve contents of the root folder.
 
-```
+```ruby
 //code
 ```
 
-+ [Copy Items]()
++ [Get Trash Items]()
+
+You can list down the contents of a folder. Below example shows how to retrieve contents of the root folder.
+
+```ruby
+//code
+```
+
++ [Get Shares]()
+  
+You can list down available shares. Below example shows how to retrieve the list of shares.
+
+```ruby
+//code
+```
+
++ [Create Share]()
+
+You can create a share by providing the path as shown in below example. A passworded share cannot be used for anything if the password is not provided. It doesn’t make sense to create a share unless the developer has the password.
+
+```ruby
+//code
+```
+
++ [Get Specific Share]()
+
+You can get a share by providing the share key and the password (If available). A passworded share cannot be used for anything if the password is not provided.
+
+```ruby
+//code
+```
+
++ [Copy Items](CloudFS/FileSystem.html#copy-instance_method)
 
 You can copy a list of items to a new location in the file system. If the contents in the destination folder conflicts with the copying items you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
-```
+```ruby
 //code
 ```
 
-+ [Move Items]()
++ [Move Items](CloudFS/FileSystem.html#move-instance_method)
 
 You can move a list of items to a new location in the file system. If the contents in the destination folder conflicts with the moving items you can either RENAME, OVERWRITE, REUSE or FAIL the operation. 
 
-```
+```ruby
 //code
 ```
 
-+ [Delete Items]()
++ [Delete Items](CloudFS/FileSystem.html#delete-instance_method)
 
  You can specify a list of items that needs to be deleted. This will return a list of Success/fail status of each item once the operation completes.
 
-```
+```ruby
 //code
 ```
-
-+ [Restore Items]()
-
-You can specify a list of items that needs to be restored from the trash. The restore options can be set to either FAIL, RESCUE or RECREATE. This will return a list of Success/fail statuses of items once the operation completes.
-
-```
-//code
-```
-
-+ [Change Item Meta Data]()
-
-You can change meta data of items. Below example demonstrates changing of a file name and saving in the file system. You can either FAIL or IGNORE if the version already exists.
-
-```
-//code
-```
-
-+ [Retrieve File History]()
-
-You can retrieve the versions of a specific item.
-
-```
-//code
-```
-
 
 ###Folder Operations
 **Note:** You need to create a session in order to perform folder operations.
 
-+ [List Folder Contents]()
++ List Folder Contents
 
 You can list the contents of a folder. This will return a list of top level folders and items in the specified folder.
 
-```
+```ruby
 //code
 ```
 
-+ [Copy Folder]()
++ [Change Folder Attributes]()
+
+You can change the attributes of a Folder by providing a hash map of field names and values. An example is given below.
+
+```ruby
+//code
+```
+
++ [Copy Folder](CloudFS/Item.html#copy_to-instance_method)
 
 You can copy a folder to a new location in the file system. If the destination conflicts with the copying folder you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
-```
+```ruby
 //code
 ```
 
-+ [Delete Folder]()
++ [Move Folder]()
+
+You can move a folder to a new location in the file system. If the destination conflicts with the moving folder you can either RENAME, OVERWRITE or FAIL the operation.
+
+```ruby
+//code
+```
++ [Delete Folder](CloudFS/Item.html#delete-instance_method)
 
 You can perform the delete operation on a folder. This will return the Success/fail status of the operation.
 
-```
+```ruby
 //code
 ```
 
@@ -189,58 +189,82 @@ You can perform the delete operation on a folder. This will return the Success/f
 
 You can restore a folder from the trash. This will return the Success/fail status of the operation.
 
-```
+```ruby
 //code
 ```
 
-+ [Create Sub Folder]()
++ [Create Sub Folder](CloudFS/Container.html#create_folder-instance_method)
 
 You can create a sub folder in a specific folder. If the folder already has a sub folder with the given name, the operation will fail.
 
-```
+```ruby
 //code
 ```
 
-+ [Upload File]()
++ [Upload File](CloudFS/Folder.html#upload-instance_method)
 
 You can upload a file from your local file system into a specific folder. If the destination conflicts, you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
-```
+```ruby
 //code
 ```
 ###File Operations
 
 **Note:** You need to create a session in order to perform file operations.
 
-+ [Copy File]()
++ [Change File Attributes]()
+
+You can change the attributes of a File by providing a hash map of field names and values. An example is given below.
+
+```ruby
+//code
+```
+
++ [Copy File](CloudFS/Item.html#copy_to-instance_method)
 
 You can copy a file to a new location in the file system. If the destination conflicts with the copying file you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
-```
+```ruby
 //code
 ```
 
-+ [Move File]()
++ [Move File](CloudFS/Item.html#move_to-instance_method)
 
 You can move a file to a new location in the file system. If the destination conflicts with the moving file you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
-```
+```ruby
 //code
 ```
 
-+ [Delete File]()
++ [Delete File](CloudFS/Item.html#delete-instance_method)
 
 You can perform the delete operation on a file. This will return the Success/fail status of the operation.
 
-```
+```ruby
 //code
 ```
 
 + [Restore File]()
 
-You can restore a file from the trash. This will return the Success/fail status of the operation.
+You can restore a file from the trash. he restore method can be set to either FAIL, RESCUE or RECREATE. This will return the Success/fail status of the operation.
 
+```ruby
+//code
 ```
+
++ [Download File](CloudFS/File.html#download-instance_method)
+
+You can download a file to your local file system.
+
+```ruby
+//code
+```
+
++ [Get Download URL]()
+
+You can get the download URL of a File.
+
+```ruby
 //code
 ```
 
@@ -248,75 +272,32 @@ You can restore a file from the trash. This will return the Success/fail status 
 
 You can retrieve the versions of a specific file.
 
-```
+```ruby
 //code
 ```
 
-+ [Download File]()
-
-You can download a file to your local file system.
-
-```
-//code
-```
-
-+ [Read File]()
-
-You can read the contents of a file to an Input Stream.
-
-
-```
-//code
-```
-
-
-###Trash Operations
-
-**Note:** You need to create a session in order to perform trash operations.
-
-+ Browse Trash
-	+	[Get Files in Trash]()
-
-
-		```
-		//code
-		```
-	+	[Get Folders in Trash]()
-
-		```
-	//code
-		```
-+ [Empty Trash]()
-
-	```
-	//code
-	```
-
-
-	
 ###Share Operations
 
 **Note:**  You need to create a session in order to perform share operations.
 
++ [Change Share Attributes]()
+
+You can change the attributes of a Share by providing a hash map of field names and values. An example is given below.
+
+```ruby
+//code
+```
+
 + [Delete Share]()
 
-	```
-	//code
-	```
-+ [Browse Share]()
-
-	```
-//code
-	```
-
-+ [Lock Share]()
-
-```
+```ruby
 //code
 ```
 
-+ [Unlock Share](aaaa)
++ [Set Share Password]()
 
-```
+Sets the share password. Old password is only needed if one exists.
+
+```ruby
 //code
 ```
