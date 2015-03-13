@@ -250,7 +250,7 @@ module CloudFS
       FileSystemCommon.validate_item_state(path)
       path = FileSystemCommon.get_item_url(path)
 
-      response = @rest_adapter.create_share(path, password)
+      response = @rest_adapter.create_share(path, password: password)
       FileSystemCommon.create_item_from_hash(@rest_adapter, ** response)
     end
 
