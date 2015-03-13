@@ -1,7 +1,6 @@
 # Bitcasa SDK for Ruby
 
-The **Bitcasa SDK for Ruby** enables Ruby developers to easily work with [Bitcasa 
-Cloud Storage Platform](https://www.bitcasa.com/) and build scalable solutions.
+The **Bitcasa SDK for Ruby** enables Ruby developers to easily work with [Bitcasa Cloud Storage Platform](https://www.bitcasa.com/) and build scalable solutions.
 
 * [REST API Documentation](https://www.bitcasa.com/cloudfs-api-docs/)
 * [Blog](http://blog.bitcasa.com/)
