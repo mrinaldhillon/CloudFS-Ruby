@@ -56,17 +56,6 @@ describe CloudFS::Session do
 		end
 	end
 
-	describe 'get admin credentials' do
-		before do
-			@auth_status = @session.authenticate(Configuration::USERNAME, Configuration::PASSWORD)
-		end
-		it '#getadmincredentials' do
-			@admin_credentials = @session.admin_credentials
-			puts(@admin_credentials)
-		end
-
-	end
-
 	describe 'is linked' do
 			before do
 				@auth_status = @session.authenticate(Configuration::USERNAME, Configuration::PASSWORD)
@@ -98,14 +87,13 @@ describe CloudFS::Session do
 		end
 	end
 
+	#Test not working Due to Server Error
 	# describe 'create account' do
 	# 	it '#createaccount' do
 	#
 	# 		@session.admin_credentials(Configuration::CLIENT_ID, Configuration::SECRET)
 	# 		@created_account = @session.create_account('test@gmail.com','user@123', email:'test@gmail.com',
 	# 																							 first_name:'test', last_name:'lastname')
-	# 		puts @created_account
-	# 		puts @created_account.username
 	# 	end
 	#
 	# end
