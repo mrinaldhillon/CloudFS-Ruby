@@ -23,6 +23,9 @@ module CloudFS
     # @return [String] the size.
     attr_reader :size
 
+		# @return [String] the extension.
+		attr_reader :extension
+
 		# @see Item#initialize
 		def initialize(client, parent: nil, in_trash: false, 
 				in_share: false, old_version: false, **properties)
