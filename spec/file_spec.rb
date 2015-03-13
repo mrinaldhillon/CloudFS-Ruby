@@ -6,9 +6,8 @@ describe CloudFS::File do
 		 session.authenticate(Configuration::USERNAME, Configuration::PASSWORD)
 		 @subject = session.filesystem
 		 @test_folder = @subject.root.create_folder(Configuration::TEST_FOLDER, exists: 'OVERWRITE')
-		 @file_folder =@test_folder.create_folder('file_test')
-		 @file = @file_folder.upload('file test', name:'file_test.txt', upload_io: true)
-
+		 @file_folder =@test_folder.create_folder('file_test', exists: 'OVERWRITE')
+		 @file = @file_folder.upload('file test', name:'file_test.txt', exists: 'OVERWRITE', upload_io: true)
 	end
 
 	it 'Should have a file' do
@@ -105,7 +104,6 @@ describe CloudFS::File do
 			@file_exist_before_download = File.exist?(@file_path + '/file_test.txt')
 		end
 		it '#download' do
-			puts (Dir.pwd)
 			@file.download(@file_path)
 			@file_exist_after_download = File.exist?(@file_path + '/file_test.txt')
 			@file_exist_before_download.must_equal false
