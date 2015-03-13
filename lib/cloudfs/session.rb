@@ -121,6 +121,7 @@ module CloudFS
 		# @param email [String] email of the end-user
 		# @param first_name [String] first name of end user
 		# @param last_name [String] last name of end user
+		# @param log_in_to_created_user [Boolean] authenticate the create users.
 		# @return [Account] new user account
 		#
 		# @raise [Client::Errors::ServiceError, Client::Errors::ArgumentError, 
@@ -146,7 +147,7 @@ module CloudFS
 		#		but returning new {Account} instance with this session's RESTful client 
 		#		is not possible since session does not allow re-authentication.
 		def create_account(username, password, email: nil, 
-				first_name: nil, last_name: nil)
+				first_name: nil, last_name: nil, log_in_to_created_user: false)
 			validate_session
 			fail RestAdapter::Errors::OperationNotAllowedError,
 				"New account creation with already linked session is not possible, 
@@ -158,6 +159,11 @@ module CloudFS
 			begin
 				response = admin_client.create_account(username, password, email: email, 
 					first_name: first_name, last_name: last_name)
+
+        if log_in_to_created_user
+          admin_client.authenticate(username,password)
+        end
+
 				Account.new(@rest_adapter, **response)
 			ensure
 				admin_client.unlink
