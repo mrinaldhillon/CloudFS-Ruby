@@ -54,21 +54,17 @@ module CloudFS
 			require_relative 'folder'
 			require_relative 'share'
 
-			return Share.new(rest_adapter, **hash) if hash.key?(:share_key)
-			fail RestAdapter::Errors::ArgumentError,
-				"Did not recognize item" unless hash.key?(:type)
-			if (hash[:type] == "folder" || hash[:type] == "root")
-				Folder.new(rest_adapter, parent: parent,
-						in_trash: in_trash, in_share: in_share, **hash)
-			else 
-				File.new(rest_adapter, parent: parent,
-						in_trash: in_trash, in_share: in_share, 
-						old_version: old_version, **hash)
-#create_file_from_mime_type(rest_adapter, parent: parent,
-#		in_trash: in_trash, in_share: in_share, 
-#						old_version: old_version, **hash) 
-
-			end
+      return Share.new(rest_adapter, ** hash) if hash.key?(:share_key)
+      fail RestAdapter::Errors::ArgumentError,
+           "Did not recognize item" unless hash.key?(:type)
+      if hash[:type] == "folder" || hash[:type] == "root"
+        Folder.new(rest_adapter, parent: parent,
+                   in_trash: in_trash, in_share: in_share, ** hash)
+      else
+        File.new(rest_adapter, parent: parent,
+                 in_trash: in_trash, in_share: in_share,
+                 old_version: old_version, ** hash)
+      end
 		end
 
 		# Create array items from corresponding array of hashes

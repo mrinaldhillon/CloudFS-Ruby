@@ -9,6 +9,9 @@ module CloudFS
 		
 		# @return [String] share_key
 		attr_reader :share_key
+
+    # @return [String] name
+    attr_reader :name
 		
 		# @return [String] type
 		attr_reader :type
@@ -21,23 +24,19 @@ module CloudFS
 		
 		# @return [String] size
 		attr_reader :size
-		
-		#	@!attribute [rw] name
-		# name of share	
-		# @overload name
-		# 	@return [String] name of share
-		# @overload name=(value)
-		# 	@param value [String]
-		# 	@raise [RestAdapter::Errors::InvalidShareError]
-		def name=(value)
-			FileSystemCommon.validate_share_state(self)
-			@name = value
-			@changed_properties[:name] = value
-		end
 
-		def name
-			@name
-		end
+    # @return [String] application data
+    attr_reader :application_data
+
+		# Set the name of the share\
+		# @param new_name [String] new name of the share.
+		# @param password [String] current password of the share.
+    def set_name(new_name, password=nil)
+      FileSystemCommon.validate_share_state(self)
+      response = @rest_adapter.alter_share_info(@share_key, current_password: password, name: new_name)
+      set_share_info(** response)
+      self
+    end
 
 		#	@!attribute [r] date_created
 		#	@return [Time] creation time
@@ -47,7 +46,27 @@ module CloudFS
 			else
 				nil
 			end
-		end
+    end
+
+    #	@!attribute [r] date_content_last_modified
+    #	@return [Time] modified time
+    def date_content_last_modified
+      if @date_content_last_modified
+        Time.at(@date_content_last_modified)
+      else
+        nil
+      end
+    end
+
+    #	@!attribute [r] date_meta_last_modified
+    #	@return [Time] modified time
+    def date_meta_last_modified
+      if @date_meta_last_modified
+        Time.at(@date_meta_last_modified)
+      else
+        nil
+      end
+    end
 
     # @param rest_adapter [RestAdapter] cloudfs RESTful api object
 		# @param [Hash] properties metadata of share
@@ -76,6 +95,13 @@ module CloudFS
 			@size = params[:share_size]
 			@date_created = params[:date_created]
 			@exists = true
+
+      if params[:single_item]
+        @application_data = params[:single_item][:application_data]
+        @date_content_last_modified = params[:single_item][:date_content_last_modified]
+        @date_meta_last_modified = params[:single_item][:date_meta_last_modified]
+      end
+
 			changed_properties_reset
 		end
 
@@ -127,7 +153,30 @@ module CloudFS
 					current_password: current_password, password: password)
 			set_share_info(**response)
 			self
-		end
+    end
+
+    # Changes, adds, or removes the share’s password or updates the name.
+    #
+    # @param [Hash] values metadata of share.
+    # @option values [String] :current_password
+    # @option values [String] :password
+    # @option values [String] :name
+    #
+    # @param password [String] current password of the share.
+    #
+    # @return [Share] return self
+    def change_attributes(values, password=nil)
+      FileSystemCommon.validate_share_state(self)
+      current_password = values.has_key?('current_password') ? values['current_password'] : password
+      new_password = values.has_key?('password') ? values['password'] : nil
+      name = values.has_key?('name') ? values['name'] : nil
+
+      response = @rest_adapter.alter_share_info(
+          @share_key, current_password: current_password, password: new_password, name: name)
+
+      set_share_info(** response)
+      self
+    end
 
 		# Unlock this share
 		# @param password	[String] password for this share
