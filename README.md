@@ -39,31 +39,26 @@ Folder root = session.filesystem.root
 Getting the contents of root folder
 
 ```ruby
-items = session.filesystem.list(item: item)	
-```
-
-or
-
-```ruby
 itemArray = session.fileSystem.list(root);
 ```
 
-Deleting the contents of root folder
+Delete a file or folder
 
 ```ruby
-//code
+item.delete
 ```
 
-Uploading a file to root folder
+Uploading a file to a folder
 
 ```ruby
-//code
+file = @folder.upload(file_path)
 ```
 
-Download a file from root folder
+Download a file from a folder
 
 ```ruby
-//code
+file = session.filesystem.get_item('file_path')
+file.download(@local_file_path)
 ```
 
 Create user (for paid accounts only)
