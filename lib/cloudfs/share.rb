@@ -164,9 +164,8 @@ module CloudFS
     #
     # @param password [String] current password of the share.
     #
-    # @return [Share] return self
+    #	@return [Boolean] based on the success or fail status of the action.
     def change_attributes(values, password=nil)
-      FileSystemCommon.validate_share_state(self)
       current_password = values.has_key?('current_password') ? values['current_password'] : password
       new_password = values.has_key?('password') ? values['password'] : nil
       name = values.has_key?('name') ? values['name'] : nil
@@ -175,7 +174,7 @@ module CloudFS
           @share_key, current_password: current_password, password: new_password, name: name)
 
       set_share_info(** response)
-      self
+      response.has_key?(:share_key)
     end
 
 		# Unlock this share

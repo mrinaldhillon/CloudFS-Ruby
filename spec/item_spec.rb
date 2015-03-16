@@ -107,19 +107,19 @@ describe CloudFS::Item do
     it '#change attributes' do
       folder_attributes = Hash.new
       folder_attributes[:name] = 'changed_folder_name'
-      @folder.change_attributes(** folder_attributes)
+      folder_result = @folder.change_attributes(** folder_attributes)
       @updated_folder = @subject.get_item(@folder.path)
 
-      puts (@updated_folder.name)
       @updated_folder.name.must_equal 'changed_folder_name'
+      folder_result.must_equal true
 
       file_attributes = Hash.new
       file_attributes[:name] = 'changed_file_name.txt'
-      @file.change_attributes(** file_attributes)
+      file_result = @file.change_attributes(** file_attributes)
       @updated_file = @subject.get_item(@file.path)
 
-      puts (@updated_file.name)
       @updated_file.name.must_equal 'changed_file_name.txt'
+      file_result.must_equal true
     end
     after do
       @updated_folder.delete(commit: true, force: true)

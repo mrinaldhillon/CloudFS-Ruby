@@ -609,6 +609,8 @@ module CloudFS
     # @param values [Hash] attribute changes.
     # @param if_conflict [String] ('FAIL', 'IGNORE') action to take
     #		if the version on this item does not match the version on the server.
+    #
+    #	@return [Boolean] based on the success or fail status of the action.
     def change_attributes(values, if_conflict: 'FAIL')
       if @type == "folder"
         response = @rest_adapter.alter_folder_meta(@url, @version,
@@ -620,6 +622,7 @@ module CloudFS
 
       parent_url = ::File.dirname(@url)
       set_item_properties(parent: parent_url, ** response)
+      response.has_key?(:id)
     end
 
 		alias == eql?
