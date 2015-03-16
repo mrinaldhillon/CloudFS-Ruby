@@ -51,14 +51,14 @@ item.delete
 Uploading a file to a folder
 
 ```ruby
-file = @folder.upload(file_path)
+file = folder.upload(file_path)
 ```
 
 Download a file from a folder
 
 ```ruby
 file = session.filesystem.get_item('file_path')
-file.download(@local_file_path)
+file.download local_file_path
 ```
 
 Create user (for paid accounts only)
@@ -73,6 +73,16 @@ account = create_account(session, user, password)
 
 ```ruby
 session = CloudFS::Session.new(clientid, secret, host, http_debug: STDERR)
+```
+
+## Running the Tests
+
+Before running the tests, you should add the API credentials found in your CloudFS account to the file \spec\configurationrb
+
+To execute the tests go the directory \spec and run:
+
+```ruby
+rake test
 ```
 
 We would love to hear what features or functionality you're interested in, or general comments on the SDK (good and bad - especially bad).
