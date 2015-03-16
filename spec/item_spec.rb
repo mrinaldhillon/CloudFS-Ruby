@@ -74,10 +74,8 @@ describe CloudFS::Item do
   describe 'set name' do
     it '#new name' do
       @folder.name =('item_test_folder_001')
-      @folder.save
 
       @file.name = ('item_test_file_001')
-      @file.save
 
       @new_folder = @subject.get_item(@folder.path)
       @new_folder.name.must_equal 'item_test_folder_001'
@@ -97,9 +95,6 @@ describe CloudFS::Item do
     it '#set application data' do
       application_data = @file.application_data
       @file.application_data = (application_data)
-      status = @file.save
-
-      status.wont_be_nil
     end
   end
 
