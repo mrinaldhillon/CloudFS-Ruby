@@ -17,9 +17,6 @@ module CloudFS
 	# 	file.download(local_folder_path, filename: new_name_of_downloaded_file)
 	class File < Item
 
-    #	@!attribute [rw] mime.
-    attr_accessor :mime
-
     # @return [String] the size.
     attr_reader :size
 

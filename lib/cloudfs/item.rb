@@ -81,13 +81,14 @@ module CloudFS
 		# 	@raise [RestAdapter::Errors::InvalidItemError,
 		#			RestAdapter::Errors::OperationNotAllowedError]
 		# 	@todo support update of nested hash, currently overwrites nested hash	
-		attr_accessor :application_data
+		attr_reader :application_data
 			
 		# see #name
 		def name=(new_name)
 			FileSystemCommon.validate_item_state(self)
 			@name = new_name
 			@changed_properties[:name] = new_name
+      change_attributes(@changed_properties)
 		end
 		
 		# @see #extension
@@ -175,6 +176,7 @@ module CloudFS
 			FileSystemCommon.validate_item_state(self)
 			@mime = value
 			@changed_properties[:mime] = value
+      change_attributes(@changed_properties)
 		end
 	
 		def application_data
@@ -185,15 +187,16 @@ module CloudFS
 			end
 		end
 
-		def application_data=(hash={})
-			FileSystemCommon.validate_item_state(self)
-			if @application_data 
-					@application_data.merge!(hash)
-			else
-					@application_data = hash.dup
-			end
-				@changed_properties[:application_data].merge!(hash)
-		end
+    def application_data=(hash={})
+      FileSystemCommon.validate_item_state(self)
+      if @application_data
+        @application_data.merge!(hash)
+      else
+        @application_data = hash.dup
+      end
+      @changed_properties[:application_data].merge!(hash)
+      change_attributes(@changed_properties)
+    end
 
     # @param rest_adapter [RestAdapter] RESTful Client instance
 		# @param parent [Item, String] default: ("/") parent folder item or url
