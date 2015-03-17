@@ -1,6 +1,7 @@
 require 'httpclient'
 require_relative 'utils'
 require_relative 'error'
+require_relative 'constants'
 
 module CloudFS
 	class RestAdapter
@@ -56,61 +57,65 @@ module CloudFS
 				@persistent_conn.reset_all
 			end
 
-			# Sends request to specified url,
-			#		calls HTTPClient#request, retries http 500 level errors with 
-			#			exponetial delay upto max retries
-			#
-			# @param method [Symbol] (:get, :put, :post, :delete) http verb
-			# @param uri [String, URI] represents complete url to web resource
-			#	@param params [Hash] http request parameters i.e. :headers, :query, :body 
-			# @option params [Hash] :header http request headers
-			# @option params [Hash] :query part of url -	
-			#		"https://host/path?key=value&key1=value1"
-			# @option params [Array<Hash>, Hash, String] :body {} to post multipart forms,  
-			#			key:value forms, string
-			#
-			# @return [Hash] response hash containing content, conten_type and http code
-			#			{ :content => String, :content_type => String, :code => Fixnum }
-			# @raise [Errors::ClientError, Errors::ServerError]
-			# 		ClientError wraps httpclient exceptions 
-			#				i.e. timeout, connection failed etc.
-			#			ServerError contains error message and code from server
-			# @optimize async request support
-			#
-			# @review Behaviour in case of error with follow_redirect set to true 
-			#		with callback block for get: observed is that if server return 
-			#		message as response body in case of error, message is discarded 
-			#		and unable to fetch it. Opened issue#234 on nahi/httpclient github.
-			#		Currently fetching HTTP::Message#reason if HTTP::Message#content 
-			#			is not available in such case
-			# @review exceptions raised by HTTPClient should not be handled
-			def request(method, uri, **params, &block)
-				method = method.to_s.downcase.to_sym
-				req_params = params.reject { |_,v| Utils.is_blank?(v) }
-				req_params = req_params.merge({ follow_redirect: true }) if method == :get
-				resp = request_with_retry(method, uri, req_params, &block)
-			
-				status = resp.status.to_i
-				response = {code: status}
-				response[:content] = resp.content 
-				response[:content_type] = resp.header['Content-Type'].first
-				if status < 200 || status >=400 || resp.redirect?
-					message = Utils.is_blank?(resp.content) ? resp.reason : resp.content
-					request = set_error_request_context(method, uri, req_params)			
-					fail Errors::ServerError.new(message, status, response, request)
-				end
-				response
-	
-				rescue HTTPClient::TimeoutError
-					request = set_error_request_context(method, uri, req_params)			
-					raise Errors::TimeoutError.new($!, request)
-				rescue HTTPClient::BadResponseError
-					request = set_error_request_context(method, uri, req_params)			
-					raise Errors::ClientError.new($!, request)
-				rescue Errno::ECONNREFUSED, EOFError, SocketError
-					request = set_error_request_context(method, uri, req_params)			
-					raise Errors::ConnectionFailed.new($!, request)
-			end
+      # Sends request to specified url,
+      #		calls HTTPClient#request, retries http 500 level errors with
+      #			exponetial delay upto max retries
+      #
+      # @param method [Symbol] (:get, :put, :post, :delete) http verb
+      # @param uri [String, URI] represents complete url to web resource
+      #	@param params [Hash] http request parameters i.e. :headers, :query, :body
+      # @option params [Hash] :header http request headers
+      # @option params [Hash] :query part of url -
+      #		"https://host/path?key=value&key1=value1"
+      # @option params [Array<Hash>, Hash, String] :body {} to post multipart forms,
+      #			key:value forms, string
+      #
+      # @return [Hash] response hash containing content, conten_type and http code
+      #			{ :content => String, :content_type => String, :code => Fixnum }
+      # @raise [Errors::ClientError, Errors::ServerError]
+      # 		ClientError wraps httpclient exceptions
+      #				i.e. timeout, connection failed etc.
+      #			ServerError contains error message and code from server
+      # @optimize async request support
+      #
+      # @review Behaviour in case of error with follow_redirect set to true
+      #		with callback block for get: observed is that if server return
+      #		message as response body in case of error, message is discarded
+      #		and unable to fetch it. Opened issue#234 on nahi/httpclient github.
+      #		Currently fetching HTTP::Message#reason if HTTP::Message#content
+      #			is not available in such case
+      # @review exceptions raised by HTTPClient should not be handled
+      def request(method, uri, ** params, &block)
+        method = method.to_s.downcase.to_sym
+        req_params = params.reject { |_, v| Utils.is_blank?(v) }
+
+        if method == :get && !params[:header].has_key?(Constants::HEADER_REDIRECT)
+          req_params = req_params.merge({follow_redirect: true})
+        end
+
+        resp = request_with_retry(method, uri, req_params, &block)
+
+        status = resp.status.to_i
+        response = {code: status}
+        response[:content] = resp.content
+        response[:content_type] = resp.header['Content-Type'].first
+        if status < 200 || status >=400 || (resp.redirect? && status != 302)
+          message = Utils.is_blank?(resp.content) ? resp.reason : resp.content
+          request = set_error_request_context(method, uri, req_params)
+          fail Errors::ServerError.new(message, status, response, request)
+        end
+        response
+
+      rescue HTTPClient::TimeoutError
+        request = set_error_request_context(method, uri, req_params)
+        raise Errors::TimeoutError.new($!, request)
+      rescue HTTPClient::BadResponseError
+        request = set_error_request_context(method, uri, req_params)
+        raise Errors::ClientError.new($!, request)
+      rescue Errno::ECONNREFUSED, EOFError, SocketError
+        request = set_error_request_context(method, uri, req_params)
+        raise Errors::ConnectionFailed.new($!, request)
+      end
 		
 			# Retries HTTP 500 error upto max retries
 			# @see request for request and response parameters	

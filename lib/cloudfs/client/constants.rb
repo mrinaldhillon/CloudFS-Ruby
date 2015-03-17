@@ -21,6 +21,8 @@ module CloudFS
 			HEADER_AUTH_PREFIX_BCS = "BCS"
 			# HEADER_AUTHORIZATION authorization 
 			HEADER_AUTHORIZATION = "Authorization"
+			# HEADER_REDIRECT follow_redirect
+			HEADER_REDIRECT = "follow_redirect"
 			# CONTENT_TYPE_APP_URLENCODED url for application
 			CONTENT_TYPE_APP_URLENCODED = "application/x-www-form-urlencoded;charset=utf-8"
 			# CONTENT_TYPE_MULTI content type for multipart

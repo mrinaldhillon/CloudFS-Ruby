@@ -653,7 +653,21 @@ module CloudFS
 			end
 
 			request('GET', uri: uri, header: header, &block)
-		end
+    end
+
+    # Get the download URL of the file.
+    # @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+    #		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+    #		RestAdapter::Errors::OperationNotAllowedError]
+    # @return [String] request response containing the download URL.
+    def download_url(path)
+      uri = set_uri_params(Constants::ENDPOINT_FILES, name: path)
+      header = {
+          Constants::HEADER_REDIRECT => false
+      }.merge(Constants::HEADER_CONTENT_TYPE_APP_URLENCODED.dup)
+
+      request('GET', uri: uri, header: header)
+    end
 
 		# List specified version of file
 		#

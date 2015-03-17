@@ -61,7 +61,18 @@ module CloudFS
 				@rest_adapter.download(@url) { |buffer| file.write(buffer) }
 			end
 			true
-		end
+    end
+
+    # Get the download URL of the file.
+    # @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
+    #		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
+    #		RestAdapter::Errors::OperationNotAllowedError]
+    # @return [String] download URL of the file.
+    def download_url
+      url = @rest_adapter.download_url(@url)
+      URI.extract(url).first.chomp(';')
+    end
+
 
 		# Read from file to buffer
 		#
