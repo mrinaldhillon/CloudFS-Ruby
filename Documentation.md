@@ -116,7 +116,7 @@ share = session.filesystem.create_share('file_path/folder_path', 'new_share_pass
 You can copy a list of items to a new location in the file system. If the contents in the destination folder conflicts with the copying items you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
 ```ruby
-items = session.copy([@copy_item1, @copy_item2], @copy_target)
+items = session.copy([copy_item1, copy_item2], copy_target)
 ```
 
 + [Move Items](CloudFS/FileSystem.html#move-instance_method)
@@ -124,7 +124,7 @@ items = session.copy([@copy_item1, @copy_item2], @copy_target)
 You can move a list of items to a new location in the file system. If the contents in the destination folder conflicts with the moving items you can either RENAME, OVERWRITE, REUSE or FAIL the operation. 
 
 ```ruby
-items = session.move([@move_item1, @move_item2], @move_target)
+items = session.move([move_item1, move_item2], move_target)
 ```
 
 + [Delete Items](CloudFS/FileSystem.html#delete-instance_method)
@@ -132,7 +132,7 @@ items = session.move([@move_item1, @move_item2], @move_target)
  You can specify a list of items that needs to be deleted. This will return a list of Success/fail status of each item once the operation completes.
 
 ```ruby
-item = session.filesystem.delete(@file)
+item = session.filesystem.delete(file)
 ```
 
 ###Folder Operations
@@ -154,7 +154,7 @@ You can change the attributes of a Folder by providing a hash map of field names
 ```ruby
 folder_attributes = Hash.new
 folder_attributes[:name] = 'changed_folder_name'
-@folder.change_attributes(** folder_attributes)
+folder.change_attributes(** folder_attributes)
 ```
 
 + [Copy Folder](CloudFS/Item.html#copy_to-instance_method)
@@ -162,7 +162,7 @@ folder_attributes[:name] = 'changed_folder_name'
 You can copy a folder to a new location in the file system. If the destination conflicts with the copying folder you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
 ```ruby
-@copy_folder.copy(@copy_target.path)
+copy_folder.copy copy_target.path
 ```
 
 + [Move Folder](CloudFS/Item.html#move-instance_method)
@@ -170,14 +170,14 @@ You can copy a folder to a new location in the file system. If the destination c
 You can move a folder to a new location in the file system. If the destination conflicts with the moving folder you can either RENAME, OVERWRITE or FAIL the operation.
 
 ```ruby
-@move_source.move(@move_target.path)
+move_source.move move_target.path
 ```
 + [Delete Folder](CloudFS/Item.html#delete-instance_method)
 
 You can perform the delete operation on a folder. This will return the Success/fail status of the operation.
 
 ```ruby
-status = @folder.delete
+status = folder.delete
 ```
 
 + [Restore Folder](CloudFS/Item.html#restore-instance_method)
@@ -185,7 +185,7 @@ status = @folder.delete
 You can restore a folder from the trash. This will return the Success/fail status of the operation.
 
 ```ruby
-  @delete_folder.restore(destination: @delete_folder.path)
+  delete_folder.restore destination: delete_folder.path
 ```
 
 + [Create Sub Folder](CloudFS/Container.html#create_folder-instance_method)
@@ -193,7 +193,7 @@ You can restore a folder from the trash. This will return the Success/fail statu
 You can create a sub folder in a specific folder. If the folder already has a sub folder with the given name, the operation will fail.
 
 ```ruby
-@folder.create_folder('test_folder')
+folder.create_folder 'test_folder' 
 ```
 
 + [Upload File](CloudFS/Folder.html#upload-instance_method)
@@ -201,7 +201,7 @@ You can create a sub folder in a specific folder. If the folder already has a su
 You can upload a file from your local file system into a specific folder. If the destination conflicts, you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
 ```ruby
-file = @folder.upload(file_path)
+file = folder.upload file_path
 ```
 
 ###File Operations
@@ -215,7 +215,7 @@ You can change the attributes of a File by providing a hash map of field names a
 ```ruby
 file_attributes = Hash.new
 file_attributes[:name] = 'changed_file_name'
-@file.change_attributes(** file_attributes)
+file.change_attributes(** file_attributes)
 ```
 
 + [Copy File](CloudFS/Item.html#copy-instance_method)
@@ -223,7 +223,7 @@ file_attributes[:name] = 'changed_file_name'
 You can copy a file to a new location in the file system. If the destination conflicts with the copying file you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
 ```ruby
-@file.copy('destination_path', exists: 'OVERWRITE')
+file.copy('destination_path', exists: 'OVERWRITE')
 ```
 
 + [Move File](CloudFS/Item.html#move-instance_method)
@@ -231,7 +231,7 @@ You can copy a file to a new location in the file system. If the destination con
 You can move a file to a new location in the file system. If the destination conflicts with the moving file you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
 
 ```ruby
-@file.move('destination_path', exists: 'OVERWRITE')
+file.move('destination_path', exists: 'OVERWRITE')
 ```
 
 + [Delete File](CloudFS/Item.html#delete-instance_method)
@@ -239,7 +239,7 @@ You can move a file to a new location in the file system. If the destination con
 You can perform the delete operation on a file. This will return the Success/fail status of the operation.
 
 ```ruby
-@file.delete
+file.delete
 ```
 
 + [Restore File](CloudFS/Item.html#restore-instance_method)
@@ -247,7 +247,7 @@ You can perform the delete operation on a file. This will return the Success/fai
 You can restore a file from the trash. he restore method can be set to either FAIL, RESCUE or RECREATE. This will return the Success/fail status of the operation.
 
 ```ruby
-@file.restore('destination_path', exists: 'OVERWRITE')
+file.restore('destination_path', exists: 'OVERWRITE')
 ```
 
 + [Download File](CloudFS/File.html#download-instance_method)
@@ -255,7 +255,7 @@ You can restore a file from the trash. he restore method can be set to either FA
 You can download a file to your local file system.
 
 ```ruby
-@file.download(@local_file_path)
+file.download local_file_path
 ```
 
 
@@ -264,7 +264,7 @@ You can download a file to your local file system.
 You can retrieve the versions of a specific file.
 
 ```ruby
-file_version = @file.version
+file_version = file.version
 ```
 
 ###Share Operations
@@ -274,7 +274,7 @@ file_version = @file.version
 + [Delete Share](CloudFS/Share.html#delete-instance_method)
 
 ```ruby
-@share_file.delete
+share_file.delete
 ```
 
 + [Set Share Password](CloudFS/Share.html#set_password-instance_method)
@@ -282,5 +282,5 @@ file_version = @file.version
 Sets the share password. Old password is only needed if one exists.
 
 ```ruby
-@share_file.set_password('share_password')
+share_file.set_password 'share_password'
 ```
