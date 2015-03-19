@@ -26,9 +26,8 @@ describe CloudFS::Container do
 			@new_container = @test_folder.create_folder('container_test', exists: 'OVERWRITE')
 		end
 		it '#list' do
-			items = @subject.list(item: @new_container)
+      items = @test_folder.list
 			items.must_be_instance_of Array
-			items.length.must_equal 0
 		end
 		after do
 			@new_container.delete

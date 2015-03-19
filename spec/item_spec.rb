@@ -184,8 +184,8 @@ describe CloudFS::Item do
       @delete_file.delete
       @delete_folder.delete
 
-      @delete_folder.restore(destination: @delete_folder.path)
-      @delete_file.restore(destination: @delete_file.path)
+      @delete_folder.restore(@delete_folder.path, restore_argument: true)
+      @delete_file.restore(@delete_file.path, restore_argument: true)
 
       @delete_test.list.length.must_equal 2
     end

@@ -42,7 +42,6 @@ module CloudFS
     end
 
     # overriding inherited properties that are not not valid for folder
-    private :extension, :extension=, :mime, :mime=, :blocklist_key,
-            :blocklist_id, :size, :versions, :old_version?
+    private :blocklist_key, :blocklist_id, :versions, :old_version?
   end
 end

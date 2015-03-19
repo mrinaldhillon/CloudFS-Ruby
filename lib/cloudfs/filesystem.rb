@@ -36,175 +36,6 @@ module CloudFS
       FileSystemCommon.create_item_from_hash(@rest_adapter, ** response)
     end
 
-    # List contents of a folder in end-user's filesystem
-    #
-    # @param item [Folder, String] default: root, folder object
-    #		or url in end-user's filesystem
-    #
-    # @return [Array<Folder, File>] items under folder path
-    # @raise [RestAdapter::Errors::SessionNotLinked,
-    #   RestAdapter::Errors::ServiceError,
-    #		RestAdapter::Errors::InvalidItemError]
-    def list(item: nil)
-      if RestAdapter::Utils.is_blank?(item) || item.is_a?(String)
-        response = @rest_adapter.list_folder(path: item, depth: 1)
-        FileSystemCommon.create_items_from_hash_array(
-            response,
-            @rest_adapter,
-            parent: item)
-      else
-        item.list
-      end
-    end
-
-    #	Move items to destination
-    #
-    # @param items [Array<File, Folder>] items
-    # @param destination [Folder, String] destination folder or url
-    # @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME') action to take in case
-    #		of a conflict with an existing item in destination folder.
-    #
-    # @return [Array<File, Folder>] moved items
-    #	@note item at index in returned array is refrence to same object
-    #		whose properties are updated as an effect of move operation at corresponding
-    #		index in input array 'items'
-    #
-    # @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
-    #		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
-    #		RestAdapter::Errors::OperationNotAllowedError]
-    #
-    # @see Item#move
-    def move(items, destination, exists: 'RENAME')
-      fail RestAdapter::Errors::ArgumentError,
-           'Invalid input, expected items' unless items
-
-      response = []
-      Array(items).each do |item|
-        response << item.move(destination, exists: exists)
-      end
-      response
-    end
-
-    #	Copy items to destination
-    #
-    # @param items [Array<File, Folder>] items
-    # @param destination [Folder, String] destination folder or url
-    # @param exists [String] ('FAIL', 'OVERWRITE', 'RENAME') action to take in case
-    #		of a conflict with an existing item in destination folder.
-    #
-    # @return [Array<File, Folder>] copied items
-    #
-    # @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
-    #		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
-    #		RestAdapter::Errors::OperationNotAllowedError]
-    #
-    # @see Item#copy
-    def copy(items, destination, exists: 'RENAME')
-      fail RestAdapter::Errors::ArgumentError,
-           'Invalid input, expected array of items' unless items
-
-      response = []
-      Array(items).each do |item|
-        response << item.copy(destination, exists: exists)
-      end
-      response
-    end
-
-    #	Delete items from end-user's filesystem
-    #
-    # @param items [Array<File, Folder>] items
-    # @param force [Boolean] default: (false), set true to delete non-empty folder
-    # @param commit [Boolean] default: (false), set true to remove item permanently,
-    #		else deleted items are moved to trash
-    #
-    # @return [Array<Boolean>] value at index is result of delete operation
-    #		on item at corresponding index in input array 'items'
-    #
-    # @raise [RestAdapter::Errors::ArgumentError]
-    #
-    #	@note item's properties in input 'items' array are updated
-    #		as an effect of delete operation.
-    #
-    # @see Item#delete Delete an item
-    # @see #restore Restore items
-    # @see Item#restore Restore an item
-    def delete(items, force: false, commit: false, raise_exception: false)
-      fail RestAdapter::Errors::ArgumentError,
-           'Invalid input, expected array of items' unless items
-
-      responses = []
-      Array(items).each do |item|
-        responses << item.delete(force: force, commit: commit)
-      end
-      responses
-    end
-
-    #	Restore an item from trash
-    #
-    # @param item [File, Folder, String] item or url
-    # @param destination_url [String] ('RESCUE' (default root),
-    #		RECREATE(named path)) path depending on exists option to place item into
-    #		if the original path does not exist.
-    # @param exists [String] ('FAIL', 'RESCUE', RECREATE) action to take
-    #		if the recovery operation encounters issues
-    #
-    # @return [File, Folder] item object
-    #
-    # @raise [RestAdapter::Errors::SessionNotLinked,
-    #   RestAdapter::Errors::ServiceError, RestAdapter::Errors::ArgumentError,
-    #   RestAdapter::Errors::InvalidItemError,
-    #		RestAdapter::Errors::OperationNotAllowedError]
-    def restore_item(item, destination_url, exists)
-      if item.is_a?(String)
-        response = @rest_adapter.browse_trash(path: item)
-        properties = response.fetch(:meta)
-        item = FileSystemCommon.create_item_from_hash(
-            @rest_adapter,
-            in_trash: true,
-            ** properties)
-      end
-
-      item.restore(
-          destination: destination_url,
-          exists: exists,
-          raise_exception: true)
-    end
-
-    #	Restore items from trash
-    #
-    # @param items [Array<File, Folder, String>] items
-    # @param destination [Folder, String] ('RESCUE' (default root),
-    #		RECREATE(named path)) path depending on exists option to place item into
-    #		if the original path does not exist.
-    # @param exists [String] ('FAIL', 'RESCUE', 'RECREATE')
-    #		action to take if the recovery operation encounters issues, default 'FAIL'
-    #
-    # @return [Array<File, Folder>] restored items
-    #
-    #	@note unless item is url at corresponding index in input array 'items',
-    #		the item at index in returned array is refrence to same object
-    #		whose properties are updated as an effect of restore operation at
-    #		corresponding index in input array 'items'
-    #
-    # @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
-    #		RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
-    #		RestAdapter::Errors::OperationNotAllowedError]
-    #
-    # @see Item#restore
-    def restore(items, destination: nil, exists: 'FAIL')
-      fail RestAdapter::Errors::ArgumentError,
-           'Invalid input, expected items' unless items
-
-      FileSystemCommon.validate_item_state(destination)
-      destination_url = FileSystemCommon.get_folder_url(destination)
-
-      response = []
-      Array(items).each do |item|
-        response << restore_item(item, destination_url, exists)
-      end
-      response
-    end
-
     # @return [Array<File, Folder>] items in trash
     #
     # @raise [RestAdapter::Errors::SessionNotLinked,
@@ -216,31 +47,6 @@ module CloudFS
           response,
           @rest_adapter,
           in_trash: true)
-    end
-
-    # List versions of file
-    #
-    # @param item [File, String]
-    #
-    # @return [Array<File>] versions of file
-    #
-    # @raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
-    #		RestAdapter::Errors::InvalidItemError, RestAdapter::Errors::OperationNotAllowedError]
-    #
-    # @see Item#versions
-    def list_file_versions(item)
-      fail RestAdapter::Errors::ArgumentError,
-           'Invalid input, expected Item or string path' if RestAdapter::Utils.is_blank?(item)
-
-      if item.is_a?(String)
-        response = @rest_adapter.list_file_versions(item)
-        FileSystemCommon.create_items_from_hash_array(
-            response,
-            @rest_adapter,
-            parent: item)
-      else
-        item.versions
-      end
     end
 
     # List shares created by end-user
@@ -317,6 +123,7 @@ module CloudFS
       FileSystemCommon.create_item_from_hash(@rest_adapter, ** response)
     end
 
+    # Get an item located in a given location.
     def get_item(path)
       fail RestAdapter::Errors::ArgumentError,
            'Invalid input, expected item path' if RestAdapter::Utils.is_blank?(path)
@@ -328,6 +135,6 @@ module CloudFS
       end
     end
 
-    private :restore_item, :get_root
+    private :get_root
   end
 end

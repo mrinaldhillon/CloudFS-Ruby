@@ -28,10 +28,10 @@ module CloudFS
     # @return [String] application data
     attr_reader :application_data
 
-    # Set the name of the share\
+    # Set the name of the share
     # @param new_name [String] new name of the share.
     # @param password [String] current password of the share.
-    def set_name(new_name, password=nil)
+    def set_name(new_name, password: nil)
       FileSystemCommon.validate_share_state(self)
       response = @rest_adapter.alter_share_info(
           @share_key,
@@ -185,7 +185,7 @@ module CloudFS
     # @param password [String] current password of the share.
     #
     #	@return [Boolean] based on the success or fail status of the action.
-    def change_attributes(values, password=nil)
+    def change_attributes(values, password: nil)
       current_password = values.has_key?('current_password') ? values['current_password'] : password
       new_password = values.has_key?('password') ? values['password'] : nil
       name = values.has_key?('name') ? values['name'] : nil
@@ -196,19 +196,6 @@ module CloudFS
       set_share_info(** response)
       response.has_key?(:share_key)
     end
-
-    # Unlock this share
-    # @param password	[String] password for this share
-    # @return [Share] return self
-    # @raise [RestAdapter::Errors::SessionNotLinked,
-    #   RestAdapter::Errors::ServiceError,
-    #		RestAdapter::Errors::InvalidShareError]
-    def unlock(password)
-      FileSystemCommon.validate_share_state(self)
-      @rest_adapter.unlock_share(@share_key, password)
-      self
-    end
-
 
     # Save this share's current state.
     #		Only name, is committed to this share in user's account

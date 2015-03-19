@@ -53,6 +53,8 @@ module CloudFS
       ENDPOINT_FOLDERS = '/v2/folders/'
       # ENDPOINT_FILES for files
       ENDPOINT_FILES = '/v2/files/'
+      # ENDPOINT_FILES for files
+      ENDPOINT_ITEM = '/v2/files/' # TODO should change this path to /v2/filesystem/root/<path>/meta after REST fix
       # ENDPOINT_SHARES for share folder
       ENDPOINT_SHARES = '/v2/shares/'
       # ENDPOINT_HISTORY for history

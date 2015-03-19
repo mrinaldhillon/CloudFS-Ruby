@@ -23,6 +23,23 @@ module CloudFS
     # @return [String] the extension.
     attr_reader :extension
 
+    # @return [String] the mime type of file
+    attr_reader :mime
+
+    # see #mime
+    def mime=(value)
+      @mime = value
+      @changed_properties[:mime] = value
+      change_attributes(@changed_properties)
+    end
+
+    # @see #extension
+    def extension=(value)
+      FileSystemCommon.validate_item_state(self)
+      @extension = value
+      @changed_properties[:extension] = value
+    end
+
     # @see Item#initialize
     def initialize(rest_adapter, parent: nil, in_trash: false,
                    in_share: false, old_version: false, ** properties)
@@ -175,31 +192,6 @@ module CloudFS
     #	@!visibility private
     def to_s
       "#{self.class}: url #{@url}, name: #{@name}, mime: #{@mime}, version: #{@version}, size: #{@size} bytes"
-    end
-
-    # List versions of this item if file.
-    #	@note The list of files returned are mostly non-functional,
-    #		though their meta-data is correct.
-    #
-    # @param start_version [Fixnum] version number to begin listing file versions
-    # @param end_version [Fixnum] version number from which to stop
-    #		listing file versions
-    # @param limit [Fixnum] how many versions to list in the result set.
-    #		It can be negative to list items prior to given start version
-    #
-    # @return [Array<Item>] listed versions
-    #	@raise [RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
-    #		RestAdapter::Errors::InvalidItemError, RestAdapter::Errors::OperationNotAllowedError]
-    #	@review confirm if versions should be allowed for items in trash, in share
-    def versions(start_version: 0, end_version: nil, limit: 10)
-      FileSystemCommon.validate_item_state(self, in_trash: false, in_share: false)
-      fail OperationNotAllowedError,
-           "Operation not allowed for item of type #{@type}" unless @type == 'file'
-
-      response = @rest_adapter.list_file_versions(@url, start_version: start_version,
-                                                  stop_version: end_version, limit: limit)
-      FileSystemCommon.create_items_from_hash_array(response, @rest_adapter,
-                                                    parent: @url, in_share: @in_share, in_trash: @in_trash, old_version: true)
     end
 
     alias inspect to_s

@@ -88,7 +88,7 @@ describe CloudFS::Share do
       attributes['name'] = @shared_folder_name1
       attributes['password'] = 'newPassword'
       @share_instance.set_password('password')
-      result = @share_instance.change_attributes(attributes, 'password')
+      result = @share_instance.change_attributes(attributes, password: 'password')
 
       share_list = @subject.list_shares
       share_list.each do |item|
@@ -101,7 +101,7 @@ describe CloudFS::Share do
       @share_instance.name.must_equal @shared_folder_name1
 
 
-      @share_instance.set_name(@shared_folder_name2, 'newPassword')
+      @share_instance.set_name(@shared_folder_name2, password: 'newPassword')
 
       share_list = @subject.list_shares
       share_list.each do |item|

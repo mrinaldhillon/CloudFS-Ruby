@@ -1,3 +1,4 @@
+require_relative 'client/constants'
 require_relative 'filesystem_common'
 require_relative 'rest_adapter'
 
@@ -30,9 +31,6 @@ module CloudFS
     #	@return [String] blocklist_id of file
     attr_reader :blocklist_id
 
-    #	@return [Fixnum] file size in bytes
-    attr_reader :size
-
     # @return [String] absolute path of item in user's account
     attr_reader :url
 
@@ -47,39 +45,7 @@ module CloudFS
     #
     # @raise [RestAdapter::Errors::InvalidItemError,
     #   RestAdapter::Errors::OperationNotAllowedError]
-    attr_accessor :name
-
-    # mime type of file
-    #
-    # @param value [String]
-    #
-    # @raise [RestAdapter::Errors::InvalidItemError,
-    #			RestAdapter::Errors::OperationNotAllowedError]
-    attr_accessor :mime
-
-    #	extension of item of type file
-    # @overload extension
-    # 	@return [String] extension of file
-    #
-    # @overload extension=(value)
-    #		Set new file extension by including the extension in the name of file.
-    #		CloudFS will assign the extension based on the name
-    # 	@param value [String]
-    # 	@raise [RestAdapter::Errors::InvalidItemError,
-    #			RestAdapter::Errors::OperationNotAllowedError]
-    attr_accessor :extension
-
-    # extra metadata of item
-    #	@overload application_data
-    #		@return [Hash] extra metadata of item
-    #
-    # @overload application_data=(hash={})
-    # 	Sets application_data
-    # 	@param hash [Hash]
-    # 	@raise [RestAdapter::Errors::InvalidItemError,
-    #			RestAdapter::Errors::OperationNotAllowedError]
-    # 	@todo support update of nested hash, currently overwrites nested hash
-    attr_reader :application_data
+    attr_reader :name
 
     # see #name
     def name=(new_name)
@@ -89,16 +55,7 @@ module CloudFS
       change_attributes(@changed_properties)
     end
 
-    # @see #extension
-    def extension=(value)
-      fail OperationNotAllowedError,
-           "Operation not allowed for item of type #{@type}" unless @type == "file"
-      FileSystemCommon.validate_item_state(self)
-      @extension = value
-      @changed_properties[:extension] = value
-    end
-
-    #	@!attribute [rw] date_created
+    #	@!attribute [r] date_created
     #	Time when item was created
     # @overload date_created
     #		@return [Time] creation time
@@ -110,14 +67,7 @@ module CloudFS
       end
     end
 
-    # @see #date_created
-    def date_created=(value)
-      FileSystemCommon.validate_item_state(self)
-      @date_created = value.utc.to_i
-      @changed_properties[:date_created] = @date_created
-    end
-
-    #	@!attribute [rw] date_meta_last_modified
+    #	@!attribute [r] date_meta_last_modified
     #	Time when item's metadata was last modified
     # @overload date_meta_last_modified
     #		@return [Time] time when metadata was last modified
@@ -129,14 +79,7 @@ module CloudFS
       end
     end
 
-    # @see #date_meta_last_modified
-    def date_meta_last_modified=(value)
-      FileSystemCommon.validate_item_state(self)
-      @date_meta_last_modified = value.utc.to_i
-      @changed_properties[:date_meta_last_modified] = @date_meta_last_modified
-    end
-
-    #	@!attribute [rw] date_content_last_modified
+    #	@!attribute [r] date_content_last_modified
     #	Time when item's content was last modified
     # @overload date_content_last_modified
     #		@return [Time] time when content was last modified
@@ -146,23 +89,6 @@ module CloudFS
       else
         nil
       end
-    end
-
-    # @see #date_content_last_modified
-    def date_content_last_modified=(value)
-      FileSystemCommon.validate_item_state(self)
-      @date_content_last_modified = value.utc.to_i
-      @changed_properties[:date_content_last_modified] = @date_content_last_modified
-    end
-
-    # see #mime
-    def mime=(value)
-      fail OperationNotAllowedError,
-           "Operation not allowed for item of type #{@type}" unless @type == 'file'
-      FileSystemCommon.validate_item_state(self)
-      @mime = value
-      @changed_properties[:mime] = value
-      change_attributes(@changed_properties)
     end
 
     def application_data
@@ -515,11 +441,12 @@ module CloudFS
     # @param destination [Folder, String] ('RESCUE' (default root),
     #		RECREATE(named path)) destination folder path depending on exists
     #		option to place item into if the original path does not exist.
-    # @param exists [String] ('FAIL', 'RESCUE', 'RECREATE')
+    # @param method [String] ('FAIL', 'RESCUE', 'RECREATE')
     #		action to take if the recovery operation encounters issues, default 'FAIL'
     # @param raise_exception [Boolean] (false)
     #		method suppresses exceptions and returns false if set to false,
     #			added so that consuming application can control behaviour
+    # @param restore_argument [String] update this item after it has been restored
     #
     # @return [Boolean] true/false
     #
@@ -537,7 +464,7 @@ module CloudFS
     #		item.restore("/FOPqySw3ToK_25y-gagUfg", exists: 'RESCUE')
     #		item.restore(folderobj, exists: 'RESCUE')
     #		item.restore("/depth1/depth2", exists: 'RECREATE')
-    def restore(destination: nil, exists: 'FAIL', raise_exception: false)
+    def restore(destination, method: 'FAIL', restore_argument: nil, raise_exception: false) # restore argument.
       fail RestAdapter::Errors::OperationNotAllowedError,
            'Item needs to be in trash for Restore operation' unless @in_trash
       FileSystemCommon.validate_item_state(destination)
@@ -546,9 +473,12 @@ module CloudFS
       @rest_adapter.recover_trash_item(
           @url,
           destination: destination_url,
-          restore: exists)
+          restore: method)
 
-      set_restored_item_properties(destination_url, exists)
+      if restore_argument
+        set_restored_item_properties(destination_url, method)
+      end
+
       true
     rescue RestAdapter::Errors::SessionNotLinked, RestAdapter::Errors::ServiceError,
         RestAdapter::Errors::ArgumentError, RestAdapter::Errors::InvalidItemError,
@@ -651,6 +581,27 @@ module CloudFS
     def set_url(parent)
       parent_url = FileSystemCommon.get_folder_url(parent)
       @url = parent_url == '/' ? "/#{@id}" : "#{parent_url}/#{@id}"
+    end
+
+    # List contents of a folder in end-user's filesystem
+    #
+    # @param item [Folder, String] default: root, folder object
+    #		or url in end-user's filesystem
+    #
+    # @return [Array<Folder, File>] items under folder path
+    # @raise [RestAdapter::Errors::SessionNotLinked,
+    #   RestAdapter::Errors::ServiceError,
+    #		RestAdapter::Errors::InvalidItemError]
+    def list(item: nil)
+      if RestAdapter::Utils.is_blank?(item) || item.is_a?(String)
+        response = @rest_adapter.list_folder(path: item, depth: 1)
+        FileSystemCommon.create_items_from_hash_array(
+            response,
+            @rest_adapter,
+            parent: item)
+      else
+        item.list
+      end
     end
 
     #	@return [String]

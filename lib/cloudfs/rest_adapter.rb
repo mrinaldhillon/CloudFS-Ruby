@@ -509,6 +509,18 @@ module CloudFS
       get_meta(Constants::ENDPOINT_FILES, path)
     end
 
+    # Get item meta
+    #
+    # @param path [String] file path
+    #
+    # @return [Hash] metadata of item
+    #
+    # @raise [Errors::SessionNotLinked, Errors::ServiceError,
+    #   Errors::ArgumentError]
+    def get_item_meta(path)
+      get_meta(Constants::ENDPOINT_ITEM, path)
+    end
+
     # Get folder/file meta private common method
     #
     # @param endpoint [String] file/folder server endpoint

@@ -54,8 +54,8 @@ module CloudFS
       @account ||= get_account
     end
 
-    #	@see #admin_credentials
-    def admin_credentials(admin_client_id, admin_client_secret)
+    #	Set the admin credentials.
+    def set_admin_credentials(admin_client_id, admin_client_secret)
       @admin_credentials[:clientid] = admin_client_id ? admin_client_id : nil
       @admin_credentials[:secret] = admin_client_secret ? admin_client_secret : nil
     end

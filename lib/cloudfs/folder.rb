@@ -50,7 +50,7 @@ module CloudFS
       FileSystemCommon.validate_item_state(self)
 
       if upload_io == false
-        response = ::File.open(file_system_path, "r") do |file|
+        response = ::File.open(file_system_path, 'r') do |file|
           @rest_adapter.upload(@url, file, name: name, exists: exists)
         end
       else
@@ -85,7 +85,6 @@ module CloudFS
 
     alias inspect to_s
     # overriding inherited properties that are not not valid for folder
-    private :extension, :extension=, :mime, :mime=, :blocklist_key,
-            :blocklist_id, :size, :versions, :old_version?
+    private :blocklist_key, :blocklist_id, :versions, :old_version?
   end
 end
