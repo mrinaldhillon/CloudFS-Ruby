@@ -851,33 +851,13 @@ module CloudFS
     #	@review according to cloudfs rest doc: If the share points to a single item,
     #		only the share data is returned (not the item’s metadata).
     #		Observed only share data returned even when share points to multiple paths?
-    def create_share(paths)
+    def create_share(paths, password: nil)
       fail Errors::ArgumentError,
            'Invalid argument, must pass valid list of paths' if Utils.is_blank?(paths)
 
-      body = Array(paths).map { |path|
+      body = [*paths].map { |path|
         path = prepend_path_with_forward_slash(path)
         "path=#{Utils.urlencode(path)}" }.join('&')
-
-      uri = {endpoint: Constants::ENDPOINT_SHARES}
-
-      request('POST', uri: uri, body: body)
-    end
-
-    # Creates a share of location specified by the passed path
-    #
-    # @param path [String] file/folder path in end-user's account.
-    # @param password [String] password to access and/or delete the new share.
-    #
-    # @return [Hash] metadata of share
-    # @raise [Errors::SessionNotLinked, Errors::ServiceError,
-    #   Errors::ArgumentError]
-    def create_share(path, password: nil)
-      fail Errors::ArgumentError,
-           'Invalid argument, must pass a valid path' if Utils.is_blank?(path)
-
-      path = prepend_path_with_forward_slash(path)
-      body = "path=#{Utils.urlencode(path)}"
 
       unless password.nil?
         body += "&password=#{password}"

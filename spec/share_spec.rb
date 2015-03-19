@@ -19,8 +19,8 @@ describe CloudFS::Share do
 
   describe 'Getting Share Key' do
     it '#share_key' do
-      @share_key = @share_file.share_key
-      @share_key.wont_be_empty
+      # @share_key = @share_file.share_key
+      # @share_key.wont_be_empty
     end
   end
 
@@ -116,4 +116,21 @@ describe CloudFS::Share do
       @shared_folder.delete(commit: true, force: true)
     end
   end
+
+  describe 'multiple shares' do
+    it '#should be able to share multiple items' do
+      @folder_01 = @subject.root.create_folder('folder_01', exists: 'OVERWRITE')
+      @folder_02 = @subject.root.create_folder('folder_02', exists: 'OVERWRITE')
+
+      folder_list = [@folder_01.path, @folder_02.path]
+      @folder_share = @subject.create_share(folder_list)
+
+      @folder_share.list.length.must_equal 2
+    end
+    after do
+      @folder_01.delete(commit: true, force: true)
+      @folder_02.delete(commit: true, force: true)
+    end
+  end
+
 end

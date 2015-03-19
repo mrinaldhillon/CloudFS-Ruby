@@ -61,7 +61,7 @@ module CloudFS
 
     # Create share of paths in user's filesystem
     #
-    # @param items [Array<File, Folder, String>] file, folder or url
+    # @param paths [Array<File, Folder, String>] file, folder or url
     #
     # @return [Share] instance
     #
@@ -69,38 +69,17 @@ module CloudFS
     #   RestAdapter::Errors::ServiceError, RestAdapter::Errors::ArgumentError,
     #   RestAdapter::Errors::InvalidItemError,
     #   RestAdapter::Errors::OperationNotAllowedError]
-    def create_share(items)
+    def create_share(paths, password: nil)
       fail RestAdapter::Errors::ArgumentError,
-           'Invalid input, expected items or paths' unless items
+           'Invalid input, expected items or paths' unless paths
 
-      paths = []
-      Array(items).each do |item|
-        FileSystemCommon.validate_item_state(item)
-        paths << FileSystemCommon.get_item_url(item)
+      path_list = []
+      [*paths].each do |path|
+        FileSystemCommon.validate_item_state(path)
+        path_list << FileSystemCommon.get_item_url(path)
       end
 
-      response = @rest_adapter.create_share(paths)
-      FileSystemCommon.create_item_from_hash(@rest_adapter, ** response)
-    end
-
-    # Create share of path in user's filesystem
-    #
-    # @param path [String] file, folder or url
-    #
-    # @return [Share] instance
-    #
-    # @raise [RestAdapter::Errors::SessionNotLinked,
-    #   RestAdapter::Errors::ServiceError, RestAdapter::Errors::ArgumentError,
-    #   RestAdapter::Errors::InvalidItemError,
-    #		RestAdapter::Errors::OperationNotAllowedError]
-    def create_share(path, password: nil)
-      fail RestAdapter::Errors::ArgumentError,
-           'Invalid input, expected item or path' unless path
-
-      FileSystemCommon.validate_item_state(path)
-      path = FileSystemCommon.get_item_url(path)
-
-      response = @rest_adapter.create_share(path, password: password)
+      response = @rest_adapter.create_share(path_list, password: password)
       FileSystemCommon.create_item_from_hash(@rest_adapter, ** response)
     end
 
