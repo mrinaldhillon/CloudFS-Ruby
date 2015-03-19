@@ -4,58 +4,58 @@ require_relative 'error'
 require_relative 'constants'
 
 module CloudFS
-	class RestAdapter
-		# Provides RESTful interface
-		#	
-		# @author Mrinal Dhillon
-		# Maintains a persistent instance of class HTTPClient, 
-		#		since HTTPClient instance is MT-safe and can be called from 
-		#		several threads without synchronization after setting up an instance, 
-		#		same behaviour is expected from Connection class.	
-		#	
-		# @see http://www.rubydoc.info/gems/httpclient
-		#		
-		# @example
-		#		conn = Connection.new
-		# 	response = conn.request('GET', "https://www.example.com", 
-		#			:query => { :a => "b", :c => "d" }) 
-		# 	response = conn.request('POST', "https://www.example.com", :body => "a=b&c=d")
-		# 	response = conn.request('POST', "https://www.example.com", 
-		#			:body => { :a => "b", :c => "d"} )
-		class Connection
+  class RestAdapter
+    # Provides RESTful interface
+    #
+    # @author Mrinal Dhillon
+    # Maintains a persistent instance of class HTTPClient,
+    #		since HTTPClient instance is MT-safe and can be called from
+    #		several threads without synchronization after setting up an instance,
+    #		same behaviour is expected from Connection class.
+    #
+    # @see http://www.rubydoc.info/gems/httpclient
+    #
+    # @example
+    #		conn = Connection.new
+    # 	response = conn.request('GET', "https://www.example.com",
+    #			:query => { :a => "b", :c => "d" })
+    # 	response = conn.request('POST', "https://www.example.com", :body => "a=b&c=d")
+    # 	response = conn.request('POST', "https://www.example.com",
+    #			:body => { :a => "b", :c => "d"} )
+    class Connection
       # Creates Connection instance
-			#
-			# @param params [Hash] connection configurations 
-			# @option params [Fixnum] :connect_timeout (60) for server handshake, 
-			#			defualts to 60 as per httpclient documentation
-			# @option params [Fixnum] :send_timeout (120) for send request, 
-			#			defaults to 120 sec as per httpclient documentation, set 0 for no timeout
-			# @option params [Fixnum] :receive_timeout (60) timeout for read per block, 
-			#			defaults to 60 sec as per httpclient documentation, set 0 for no timeout
-			# @option params [Fixnum] :max_retry (0) for http 500 level errors
-			#	@option params [String] :agent_name (HTTPClient)
-			# @option params [#<<] :debug_dev (nil) provide http wire information 
-			#		from httpclient
-			def initialize(**params)
-				@persistent_conn = HTTPClient.new
-				@persistent_conn.cookie_manager = nil
+      #
+      # @param params [Hash] connection configurations
+      # @option params [Fixnum] :connect_timeout (60) for server handshake,
+      #			defualts to 60 as per httpclient documentation
+      # @option params [Fixnum] :send_timeout (120) for send request,
+      #			defaults to 120 sec as per httpclient documentation, set 0 for no timeout
+      # @option params [Fixnum] :receive_timeout (60) timeout for read per block,
+      #			defaults to 60 sec as per httpclient documentation, set 0 for no timeout
+      # @option params [Fixnum] :max_retry (0) for http 500 level errors
+      #	@option params [String] :agent_name (HTTPClient)
+      # @option params [#<<] :debug_dev (nil) provide http wire information
+      #		from httpclient
+      def initialize(** params)
+        @persistent_conn = HTTPClient.new
+        @persistent_conn.cookie_manager = nil
 
-				connect_timeout, send_timeout, receive_timeout, 
-				max_retries, debug_dev, agent_name	= 
-						params.values_at(:connect_timeout, :send_timeout, :receive_timeout, 
-								:max_retries, :debug_dev, :agent_name)
-				@persistent_conn.connect_timeout = connect_timeout if connect_timeout
-				@persistent_conn.send_timeout = send_timeout if send_timeout
-				@persistent_conn.receive_timeout = receive_timeout if receive_timeout
-				@persistent_conn.debug_dev = debug_dev if debug_dev.respond_to?(:<<)
-				@persistent_conn.agent_name = agent_name
-				@max_retries = max_retries ? max_retries : 0
-			end
-		
-			# Disconnects all keep alive connections and intenal sessions
-			def unlink
-				@persistent_conn.reset_all
-			end
+        connect_timeout, send_timeout, receive_timeout,
+            max_retries, debug_dev, agent_name =
+            params.values_at(:connect_timeout, :send_timeout, :receive_timeout,
+                             :max_retries, :debug_dev, :agent_name)
+        @persistent_conn.connect_timeout = connect_timeout if connect_timeout
+        @persistent_conn.send_timeout = send_timeout if send_timeout
+        @persistent_conn.receive_timeout = receive_timeout if receive_timeout
+        @persistent_conn.debug_dev = debug_dev if debug_dev.respond_to?(:<<)
+        @persistent_conn.agent_name = agent_name
+        @max_retries = max_retries ? max_retries : 0
+      end
+
+      # Disconnects all keep alive connections and intenal sessions
+      def unlink
+        @persistent_conn.reset_all
+      end
 
       # Sends request to specified url,
       #		calls HTTPClient#request, retries http 500 level errors with
@@ -116,39 +116,39 @@ module CloudFS
         request = set_error_request_context(method, uri, req_params)
         raise Errors::ConnectionFailed.new($!, request)
       end
-		
-			# Retries HTTP 500 error upto max retries
-			# @see request for request and response parameters	
-			def request_with_retry(method, uri, req_params, &block)
-				retry_count = 0
-				loop do
-					response = @persistent_conn.request(method, uri, req_params, &block)
-					retry_count += 1
-					break response unless (response.status.to_i >= 500) && do_retry?(retry_count)
-				end
-			end
 
-			# Check if retry count is less that max retries and exponetially sleep
-			# @param retry_count [Fixnum] current count of retry
-			# @return [Boolean]
-			def do_retry?(retry_count)
-				# max retries + 1 to accomodate try
-				retry_count < @max_retries + 1 ? sleep(2**retry_count*0.3) && true : false
-			end
-			
-			# Set request context
-			# @see #request
-			def set_error_request_context(method, uri, request_params)
-					request = { uri: uri.to_s }
-					request[:method] = method.to_s
-					# @optimize copying params as string makes exception only informative, 
-					#		should instead return deep copy of request params so that 
-					#		applications can evaluate error.
-					request[:params] = request_params.to_s
-					request
-			end
+      # Retries HTTP 500 error upto max retries
+      # @see request for request and response parameters
+      def request_with_retry(method, uri, req_params, &block)
+        retry_count = 0
+        loop do
+          response = @persistent_conn.request(method, uri, req_params, &block)
+          retry_count += 1
+          break response unless (response.status.to_i >= 500) && do_retry?(retry_count)
+        end
+      end
 
-			private :set_error_request_context, :request_with_retry, :do_retry?
-		end
-	end
+      # Check if retry count is less that max retries and exponetially sleep
+      # @param retry_count [Fixnum] current count of retry
+      # @return [Boolean]
+      def do_retry?(retry_count)
+        # max retries + 1 to accommodate try
+        retry_count < @max_retries + 1 ? sleep(2**retry_count*0.3) && true : false
+      end
+
+      # Set request context
+      # @see #request
+      def set_error_request_context(method, uri, request_params)
+        request = {uri: uri.to_s}
+        request[:method] = method.to_s
+        # @optimize copying params as string makes exception only informative,
+        #		should instead return deep copy of request params so that
+        #		applications can evaluate error.
+        request[:params] = request_params.to_s
+        request
+      end
+
+      private :set_error_request_context, :request_with_retry, :do_retry?
+    end
+  end
 end
