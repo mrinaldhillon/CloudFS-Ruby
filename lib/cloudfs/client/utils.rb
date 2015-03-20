@@ -51,8 +51,8 @@ module CloudFS
       # @return [String] OAuth2 signature
       def generate_auth_signature(endpoint, params, headers, secret)
         params_sorted = sort_hash(params)
-        params_encoded = hash_to_urlencoded_str(params_sorted, "=", "&")
-        headers_encoded = hash_to_urlencoded_str(headers, ":", "&")
+        params_encoded = hash_to_urlencoded_str(params_sorted, '=', '&')
+        headers_encoded = hash_to_urlencoded_str(headers, ':', '&')
         string_to_sign = "POST&#{endpoint}&#{params_encoded}&#{headers_encoded}"
         hmac_str = OpenSSL::HMAC.digest('sha1', secret, string_to_sign)
         Base64.strict_encode64(hmac_str)

@@ -8,14 +8,15 @@ module CloudFS
   # @author Mrinal Dhillon
   class FileSystem
 
-    # @!attribute [r] root
+    # Get root object of filesystem
     #
-    # @return [Folder] root folder of this end-user's filesystem
+    # @return [Folder] represents root folder of filesystem
     #
-    # @raise [RestAdapter::Errors::SessionNotLinked,
-    #   RestAdapter::Errors::ServiceError]
+    # @raise RestAdapter::Errors::SessionNotLinked,
+    #   RestAdapter::Errors::ServiceError
     def root
-      @root ||= get_root
+      response = @rest_adapter.get_folder_meta('/')
+      FileSystemCommon.create_item_from_hash(@rest_adapter, ** response)
     end
 
     # @param rest_adapter [RestAdapter] cloudfs RESTful api object
@@ -25,15 +26,6 @@ module CloudFS
       fail RestAdapter::Errors::ArgumentError,
            'invalid RestAdapter, input type must be RestAdapter' unless rest_adapter.is_a?(RestAdapter)
       @rest_adapter = rest_adapter
-    end
-
-    # Get root object of filesystem
-    # @return [Folder] represents root folder of filesystem
-    # @raise RestAdapter::Errors::SessionNotLinked,
-    #   RestAdapter::Errors::ServiceError
-    def get_root
-      response = @rest_adapter.get_folder_meta('/')
-      FileSystemCommon.create_item_from_hash(@rest_adapter, ** response)
     end
 
     # @return [Array<File, Folder>] items in trash
@@ -62,7 +54,7 @@ module CloudFS
     # Create share of paths in user's filesystem
     #
     # @param paths [Array<File, Folder, String>] file, folder or url
-    # @param password [String] password of the share
+    # @param password [String] password.
     #
     # @return [Share] instance
     #
@@ -115,6 +107,5 @@ module CloudFS
       end
     end
 
-    private :get_root
   end
 end
