@@ -841,7 +841,8 @@ module CloudFS
 
     # Creates a share of locations specified by the passed list of paths
     #
-    # @param paths [Array<String>] array of file/folder paths in end-user's account
+    # @param paths [Array<String>] array of file/folder paths in end-user's accoun
+    # @param password [String] password of the share
     #
     # @return [Hash] metadata of share
     #

@@ -62,6 +62,7 @@ module CloudFS
     # Create share of paths in user's filesystem
     #
     # @param paths [Array<File, Folder, String>] file, folder or url
+    # @param password [String] password of the share
     #
     # @return [Share] instance
     #
