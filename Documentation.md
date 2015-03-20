@@ -57,7 +57,7 @@ You need to create an admin session in order to perform admin operations.
 You can create end users for an admin/paid account.
 
 ```ruby
-account = create_account(session, user, password) 
+account = create_account(user, password)
 ```
 
 ###File System Operations
@@ -69,23 +69,18 @@ account = create_account(session, user, password)
 	```ruby
 	root = session.filesystem.root
 	```
+
 + [Get Specific Folder](CloudFS/FileSystem.html#get_item-instance_method)
 	
 	```ruby
 	folder = session.filesystem.get_item('folder_path')
 	```  
+
 + [Get Specific File](CloudFS/FileSystem.html#get_item-instance_method)
 	
 	```ruby
 	file = session.filesystem.get_item('file_path')
 	```
-+ [List Items](CloudFS/FileSystem.html#list-instance_method)
-
-You can list down the contents of a Folder. Below example shows two approaches to retrieve contents of the root folder.
-
-```ruby
-items = session.filesystem.list(item: item)	
-```
 
 + [Get Trash Items](CloudFS/FileSystem.html#list_trash-instance_method)
 
@@ -111,30 +106,6 @@ You can create a share by providing the path as shown in below example. A passwo
 share = session.filesystem.create_share('file_path/folder_path', 'new_share_password')
 ```
 
-+ [Copy Items](CloudFS/FileSystem.html#copy-instance_method)
-
-You can copy a list of items to a new location in the file system. If the contents in the destination folder conflicts with the copying items you can either RENAME, OVERWRITE, REUSE or FAIL the operation.
-
-```ruby
-items = session.copy([copy_item1, copy_item2], copy_target)
-```
-
-+ [Move Items](CloudFS/FileSystem.html#move-instance_method)
-
-You can move a list of items to a new location in the file system. If the contents in the destination folder conflicts with the moving items you can either RENAME, OVERWRITE, REUSE or FAIL the operation. 
-
-```ruby
-items = session.move([move_item1, move_item2], move_target)
-```
-
-+ [Delete Items](CloudFS/FileSystem.html#delete-instance_method)
-
- You can specify a list of items that needs to be deleted. This will return a list of Success/fail status of each item once the operation completes.
-
-```ruby
-item = session.filesystem.delete(file)
-```
-
 ###Folder Operations
 
 **Note:** You need to create a session in order to perform folder operations.
@@ -144,7 +115,7 @@ item = session.filesystem.delete(file)
 You can list the contents of a folder. This will return a list of top level folders and items in the specified folder.
 
 ```ruby
-items = session.filesystem.list(item: item)
+items = folder.list(item: item)
 ```
 
 + [Change Folder Attributes](CloudFS/Item.html#change_attributes-instance_method)
