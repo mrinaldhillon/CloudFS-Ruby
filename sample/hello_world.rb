@@ -11,7 +11,7 @@ TEST_USER_PASSWORD = ''
 if __FILE__ == $0
 	begin
 	# Initialize Session
-	session = CloudFS::Session.new(CLIENT_ID, CLIENT_SECRET, BASE_URL)
+	session = CloudFS::Session.new(BASE_URL, CLIENT_ID, CLIENT_SECRET)
 	session.is_linked?		#=> false
 
 	# Authenticate session with test user credentials

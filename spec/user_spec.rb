@@ -2,7 +2,7 @@ require_relative 'spec_helper'
 
 describe CloudFS::User do
 	before do
-		 session = CloudFS::Session.new(Configuration::CLIENT_ID, Configuration::SECRET, Configuration::HOST)
+     session = CloudFS::Session.new(Configuration::HOST, Configuration::CLIENT_ID, Configuration::SECRET)
 		 session.authenticate(Configuration::USERNAME, Configuration::PASSWORD)
 		 @logged_in_user = session.user
 	end

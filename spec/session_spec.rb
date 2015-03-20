@@ -2,7 +2,7 @@ require_relative 'spec_helper'
 
 describe CloudFS::Session do
 	before do
-		@session = CloudFS::Session.new(Configuration::CLIENT_ID, Configuration::SECRET, Configuration::HOST)
+		@session = CloudFS::Session.new(Configuration::HOST, Configuration::CLIENT_ID, Configuration::SECRET)
 	end
 
 	it 'initializing session' do

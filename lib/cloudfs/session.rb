@@ -14,7 +14,7 @@ module CloudFS
   #
   #	@author Mrinal Dhillon
   #	@example
-  #   session = CloudFS::Session.new(clientid, secret, host)
+  #   session = CloudFS::Session.new(end_point, clientid, secret)
   #		session.is_linked?		#=> false
   #		session.autheticate(username, password)
   #		session.is_linked?		#=> true
@@ -60,9 +60,9 @@ module CloudFS
       @admin_credentials[:secret] = admin_client_secret ? admin_client_secret : nil
     end
 
+    # @param end_point [String] cloudfs application api server hostname
     # @param clientid [String] account clientid
     # @param secret [String] account secret
-    # @param host [String] cloudfs application api server hostname
     #	@param [Hash] http_conf RESTful connection configurations
     #	  @option http_conf [Fixnum] :connect_timeout (60) for server handshake
     #	  @option http_conf [Fixnum] :send_timeout (0) for send request,
@@ -80,12 +80,12 @@ module CloudFS
     #   connection pool, default is 15 seconds. Async api support
     #
     # @review optimum default values for http timeouts
-    def initialize(clientid, secret, host, ** http_conf)
+    def initialize(end_point, clientid, secret, ** http_conf)
       @http_debug = http_conf[:http_debug]
-      @rest_adapter = RestAdapter.new(clientid, secret, host, ** http_conf)
+      @rest_adapter = RestAdapter.new(clientid, secret, end_point, ** http_conf)
       @unlinked = false
       @admin_credentials = {}
-      @admin_credentials[:host] = host ? host : 'access.bitcasa.com'
+      @admin_credentials[:host] = end_point ? end_point : 'access.bitcasa.com'
     end
 
     # Attempts to log into the end-user's filesystem, links this session
@@ -151,7 +151,7 @@ module CloudFS
     #     created account's credentials
     #
     #		# Set credentials of prototype account
-    #		session = Session.new(clientid, secret, host)
+    #		session = Session.new(clientid, secret, end_point)
     #
     #		# Set credentials of Paid CloudFS admin account
     #		session.admin_credentials={ clientid: clientid, secret: secret }

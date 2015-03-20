@@ -2,7 +2,7 @@ require_relative 'spec_helper'
 
 describe CloudFS::File do
   before do
-    session = CloudFS::Session.new(Configuration::CLIENT_ID, Configuration::SECRET, Configuration::HOST)
+    session = CloudFS::Session.new(Configuration::HOST, Configuration::CLIENT_ID, Configuration::SECRET)
     session.authenticate(Configuration::USERNAME, Configuration::PASSWORD)
     @subject = session.filesystem
     @test_folder = @subject.root.create_folder(Configuration::TEST_FOLDER, exists: 'OVERWRITE')
@@ -92,7 +92,14 @@ describe CloudFS::File do
       @file_exist_before_download = File.exist?(@file_path + '/file_test.txt')
     end
     it '#download' do
-      @file.download(@file_path)
+      file_size = 0
+      downloaded_size = 0
+      @file.download(@file_path) do |size, downloaded|
+        file_size = size
+        downloaded_size = downloaded
+      end
+
+      downloaded_size.must_equal file_size
       @file_exist_after_download = File.exist?(@file_path + '/file_test.txt')
       @file_exist_before_download.must_equal false
       @file_exist_after_download.must_equal true
@@ -122,7 +129,6 @@ describe CloudFS::File do
       @file_versions.wont_be_nil
       @file_versions.must_be_instance_of Array
     end
-
   end
 
 end

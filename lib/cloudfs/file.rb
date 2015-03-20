@@ -54,6 +54,7 @@ module CloudFS
     #
     # @param local_destination_path [String] path of local folder
     # @param filename [String] name of downloaded file, default is name of this file
+    # @yield [Integer] download progress.
     #
     #	@return [true]
     #
@@ -63,7 +64,7 @@ module CloudFS
     # @review overwrites a file if it exists at local path
     #	@note Internally uses chunked stream download,
     #		max size of in-memory chunk is 16KB.
-    def download(local_destination_path, filename: nil)
+    def download(local_destination_path, filename: nil, &block)
       fail RestAdapter::Errors::ArgumentError,
            'local path is not a valid directory' unless ::File.directory?(local_destination_path)
       FileSystemCommon.validate_item_state(self)
@@ -75,7 +76,12 @@ module CloudFS
         local_filepath = "#{local_destination_path}/#{filename}"
       end
       ::File.open(local_filepath, 'wb') do |file|
-        @rest_adapter.download(@url) { |buffer| file.write(buffer) }
+        downloaded = 0
+        @rest_adapter.download(@url) do |buffer|
+          downloaded += buffer.size
+          file.write(buffer)
+          yield @size, downloaded if block_given?
+        end
       end
       true
     end
