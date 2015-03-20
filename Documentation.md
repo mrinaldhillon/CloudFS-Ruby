@@ -21,7 +21,7 @@ Sessions represent connections to CloudFS. They use a set of credentials that co
 [Session](CloudFS/Session.html) - Performs regular file system operations.
 
 ```ruby
-session = CloudFS::Session.new(Configuration::CLIENT_ID, Configuration::SECRET, Configuration::HOST)
+session = CloudFS::Session.new(end_point, client_id, client_secret)
 ```
 
 A user can be linked to the session by authenticating using a username and a password.
@@ -57,7 +57,7 @@ You need to create an admin session in order to perform admin operations.
 You can create end users for an admin/paid account.
 
 ```ruby
-account = create_account(user, password)
+account = create_account(username, password, email, first_name, last_name, log_in_to_created_user)
 ```
 
 ###File System Operations

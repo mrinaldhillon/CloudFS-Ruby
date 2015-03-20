@@ -26,7 +26,7 @@ The **Bitcasa SDK for Ruby** enables Ruby developers to easily work with [Bitcas
 Use the credentials you obtained from Bitcasa admin console to create a client session. This session can be used for all future requests to Bitcasa.
 
 ```ruby
-session = CloudFS::Session.new(clientid, secret, host)
+session = CloudFS::Session.new(end_point, client_id, client_secret)
 session.authenticate(username, password)
 ```
 
@@ -58,7 +58,7 @@ file.download local_destination_path
 Create user (for paid accounts only)
 
 ```ruby
-account = create_account(username, password)
+account = create_account(username, password, email, first_name, last_name, log_in_to_created_user)
 ```
 
 ##	Debug
