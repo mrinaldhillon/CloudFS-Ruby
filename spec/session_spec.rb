@@ -87,15 +87,16 @@ describe CloudFS::Session do
 		end
 	end
 
-	#Test not working Due to Server Error
-	# describe 'create account' do
-	# 	it '#createaccount' do
-	#
-	# 		@session.admin_credentials(Configuration::CLIENT_ID, Configuration::SECRET)
-	# 		@created_account = @session.create_account('test@gmail.com','user@123', email:'test@gmail.com',
-	# 																							 first_name:'test', last_name:'lastname')
-	# 	end
-	#
-	# end
+  # Disabling this test to prevent creating new accounts.
+  #
+  # describe 'create account' do
+  # 	it '#createaccount' do
+  #
+  # 		@session.set_admin_credentials(Configuration::ADMIN_ID, Configuration::ADMIN_SECRET)
+  # 		@created_account = @session.create_account('test@gmail.com','user@123', email:'test@gmail.com',
+  # 																							 first_name:'test', last_name:'lastname')
+  # 	end
+  #
+  # end
 
 end
