@@ -40,6 +40,7 @@ module CloudFS
     # Create item from hash
     # @param rest_adapter [RestAdapter] RESTful Client instance
     # @param parent [Item, String] parent item of type folder
+    # @option parent_state [Hash] parent_state the parent state of the item
     # @param in_trash [Boolean] set true to specify, item exists in trash
     # @param in_share [Boolean] set true to specify, item exists in share
     # @param old_version [Boolean] set true to specify, item is an old version
@@ -49,7 +50,7 @@ module CloudFS
     #	@review not creating file objects based on mime type,
     #		since save operation cannot update the class of file object,
     #		if mime is changed
-    def create_item_from_hash(rest_adapter, parent: nil,
+    def create_item_from_hash(rest_adapter, parent: nil, parent_state: nil,
                               in_trash: false, in_share: false, old_version: false, ** hash)
       require_relative 'file'
       require_relative 'folder'
@@ -59,10 +60,10 @@ module CloudFS
       fail RestAdapter::Errors::ArgumentError,
            'Did not recognize item' unless hash.key?(:type)
       if hash[:type] == 'folder' || hash[:type] == 'root'
-        Folder.new(rest_adapter, parent: parent,
+        Folder.new(rest_adapter, parent: parent, parent_state: parent_state,
                    in_trash: in_trash, in_share: in_share, ** hash)
       else
-        File.new(rest_adapter, parent: parent,
+        File.new(rest_adapter, parent: parent, parent_state: parent_state,
                  in_trash: in_trash, in_share: in_share,
                  old_version: old_version, ** hash)
       end
@@ -72,16 +73,17 @@ module CloudFS
     # @param hashes [Array<Hash>] array of hash properties of items
     # @param rest_adapter [RestAdapter] RESTful Client instance
     # @option parent [Item, String] parent item of type folder
+    # @option parent_state [Hash] parent_state the parent state of the item
     # @option in_trash [Boolean] set true to specify, items exist in trash
     # @option in_share [Boolean] set true to specify, items exist in share
     # @option old_version [Boolean] set true to specify, items are old version
     # @return [Array<File, Folder, Share>] items
     # @raise [RestAdapter::Errors::ArgumentError]
     def create_items_from_hash_array(hashes, rest_adapter,
-                                     parent: nil, in_trash: false, in_share: false, old_version: false)
+                                     parent: nil, parent_state: nil, in_trash: false, in_share: false, old_version: false)
       items = []
       hashes.each do |item|
-        resp = create_item_from_hash(rest_adapter, parent: parent,
+        resp = create_item_from_hash(rest_adapter, parent: parent, parent_state: parent_state,
                                      in_trash: in_trash, in_share: in_share,
                                      old_version: old_version, ** item)
         items << resp

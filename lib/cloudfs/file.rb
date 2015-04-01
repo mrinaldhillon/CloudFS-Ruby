@@ -41,7 +41,7 @@ module CloudFS
     end
 
     # @see Item#initialize
-    def initialize(rest_adapter, parent: nil, in_trash: false,
+    def initialize(rest_adapter, parent: nil, parent_state: nil, in_trash: false,
                    in_share: false, old_version: false, ** properties)
       fail RestAdapter::Errors::ArgumentError,
            "Invalid item of type #{properties[:type]}" unless properties[:type] == 'file'

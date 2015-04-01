@@ -70,4 +70,37 @@ describe CloudFS::Folder do
       Dir.delete(@directory_path)
     end
   end
+
+  describe 'Listing the folder content, traversing ' do
+    before do
+      @root_folder = @test_folder.create_folder('root_folder', exists: 'OVERWRITE')
+      @folder_child_01 = @root_folder.create_folder('folder_child_01', exists: 'OVERWRITE')
+      @folder_child_01.upload('folder child 01 content', name: 'folder_child_01.txt', upload_io: true)
+    end
+
+    it 'Should show the child folders and files' do
+      root_folder_content = @root_folder.list
+      root_folder_content.length.must_equal 1
+      root_folder_content.first.name.must_equal 'folder_child_01'
+
+      child_folder_content = root_folder_content.first.list
+      child_folder_content.length.must_equal 1
+      child_folder_content.first.name.must_equal 'folder_child_01.txt'
+
+      @root_folder.delete(commit: false, force: true)
+
+      root_trash_folder = @root_folder.list
+      root_trash_folder.length.must_equal 1
+      root_trash_folder.first.name.must_equal 'folder_child_01'
+
+      first_trash_child = root_trash_folder.first.list
+      first_trash_child.length.must_equal 1
+      first_trash_child.first.name.must_equal 'folder_child_01.txt'
+    end
+
+    after do
+      @root_folder.delete(commit: true, force: true)
+    end
+  end
+
 end

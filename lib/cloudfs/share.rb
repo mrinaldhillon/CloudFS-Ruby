@@ -107,6 +107,8 @@ module CloudFS
         @date_meta_last_modified = params[:single_item][:date_meta_last_modified]
       end
 
+      @parent_state = {:share_key => @share_key}
+
       changed_properties_reset
     end
 
@@ -133,6 +135,7 @@ module CloudFS
       FileSystemCommon.create_items_from_hash_array(
           response,
           @rest_adapter,
+          parent_state: @parent_state,
           in_share: true)
     end
 

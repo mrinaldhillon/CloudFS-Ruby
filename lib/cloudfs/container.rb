@@ -12,7 +12,7 @@ module CloudFS
   #		session.filesystem.root.list	# => Array<File, Folder>
   class Container < Item
     # @see Item#initialize
-    def initialize(rest_adapter, parent: nil, in_trash: false,
+    def initialize(rest_adapter, parent: nil, parent_state: nil, in_trash: false,
                    in_share: false, ** properties)
       fail RestAdapter::Errors::ArgumentError,
            "Invalid item of type #{properties[:type]}" unless properties[:type] ==
@@ -29,7 +29,9 @@ module CloudFS
       fail RestAdapter::Errors::InvalidItemError,
            'Operation not allowed as item does not exist anymore' unless exists?
 
-      if @in_trash
+      if @in_share
+        response = @rest_adapter.browse_share(@state[:share_key], path: @url).fetch(:items)
+      elsif @in_trash
         response = @rest_adapter.browse_trash(path: @url).fetch(:items)
       else
         response = @rest_adapter.list_folder(path: @url, depth: 1)
@@ -38,7 +40,9 @@ module CloudFS
           response,
           @rest_adapter,
           parent: @url,
-          in_trash: @in_trash)
+          in_share: @in_share,
+          in_trash: @in_trash,
+          parent_state: @state)
     end
 
     # overriding inherited properties that are not not valid for folder

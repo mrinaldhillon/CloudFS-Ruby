@@ -133,4 +133,27 @@ describe CloudFS::Share do
     end
   end
 
+  describe 'Listing the shared folder content and traversing' do
+    before do
+      @share_root = @test_folder.create_folder('share_root', exists: 'OVERWRITE')
+      @share_child_01 = @share_root.create_folder('share_child_01', exists: 'OVERWRITE')
+      @share_child_01.upload('share child 01 content', name: 'share_child_01.txt', upload_io: true)
+      @shared_root_folder = @subject.create_share(@share_root.path)
+    end
+
+    it 'Should show the child folders and files' do
+      shared_root_content = @shared_root_folder.list
+      shared_root_content.length.must_equal 1
+      shared_root_content.first.name.must_equal 'share_child_01'
+
+      shared_child_content = shared_root_content.first.list
+      shared_child_content.length.must_equal 1
+      shared_child_content.first.name.must_equal 'share_child_01.txt'
+    end
+
+    after do
+      @share_root.delete(commit: true, force: true)
+    end
+  end
+
 end

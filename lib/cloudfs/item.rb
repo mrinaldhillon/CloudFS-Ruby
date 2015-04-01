@@ -112,6 +112,7 @@ module CloudFS
 
     # @param rest_adapter [RestAdapter] RESTful Client instance
     # @param parent [Item, String] default: ("/") parent folder item or url
+    # @option parent_state [Hash] parent_state the parent state of the item
     # @param in_trash [Boolean] set true to specify item exists in trash
     # @param in_share [Boolean] set true to specify item exists in share
     # @param old_version [Boolean] set true to specify item is an old version
@@ -136,19 +137,19 @@ module CloudFS
     #   @option properties [Hash] :application_data ({}) extra metadata of item
     #
     # @raise [RestAdapter::Errors::ArgumentError]
-    def initialize(rest_adapter, parent: nil, in_trash: false,
+    def initialize(rest_adapter, parent: nil, parent_state: nil, in_trash: false,
                    in_share: false, old_version: false, ** properties)
       fail RestAdapter::Errors::ArgumentError,
            'Invalid RestAdaper, input type must be CloudFS::RestAdapter' unless rest_adapter.is_a?(RestAdapter)
 
       @rest_adapter = rest_adapter
-      set_item_properties(parent: parent, in_trash: in_trash,
+      set_item_properties(parent: parent, parent_state: parent_state, in_trash: in_trash,
                           in_share: in_share, old_version: old_version, ** properties)
     end
 
     # @see #initialize
     # @review required properties
-    def set_item_properties(parent: nil, in_trash: false,
+    def set_item_properties(parent: nil, parent_state: nil, in_trash: false,
                             in_share: false, old_version: false, ** params)
       # id, type and name are required instance variables
       @id = params.fetch(:id) {
@@ -179,6 +180,8 @@ module CloudFS
       @in_share = in_share
       @old_version = old_version
       @exists = true
+
+      @state = parent_state
 
       set_url(parent)
       changed_properties_reset
@@ -581,27 +584,6 @@ module CloudFS
     def set_url(parent)
       parent_url = FileSystemCommon.get_folder_url(parent)
       @url = parent_url == '/' ? "/#{@id}" : "#{parent_url}/#{@id}"
-    end
-
-    # List contents of a folder in end-user's filesystem
-    #
-    # @param item [Folder, String] default: root, folder object
-    #		or url in end-user's filesystem
-    #
-    # @return [Array<Folder, File>] items under folder path
-    # @raise [RestAdapter::Errors::SessionNotLinked,
-    #   RestAdapter::Errors::ServiceError,
-    #		RestAdapter::Errors::InvalidItemError]
-    def list(item: nil)
-      if RestAdapter::Utils.is_blank?(item) || item.is_a?(String)
-        response = @rest_adapter.list_folder(path: item, depth: 1)
-        FileSystemCommon.create_items_from_hash_array(
-            response,
-            @rest_adapter,
-            parent: item)
-      else
-        item.list
-      end
     end
 
     #	@return [String]
