@@ -47,9 +47,12 @@ module CloudFS
     #   RestAdapter::Errors::OperationNotAllowedError]
     attr_reader :name
 
-    # see #name
+    # Sets the new name and updates to CloudFS
     def name=(new_name)
       FileSystemCommon.validate_item_state(self)
+      fail RestAdapter::Errors::ArgumentError,
+           'Invalid input, expected new name' if RestAdapter::Utils.is_blank?(new_name)
+
       @name = new_name
       @changed_properties[:name] = new_name
       change_attributes(@changed_properties)

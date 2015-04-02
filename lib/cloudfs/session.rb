@@ -56,6 +56,10 @@ module CloudFS
 
     #	Set the admin credentials.
     def set_admin_credentials(admin_client_id, admin_client_secret)
+      if RestAdapter::Utils.is_blank?(admin_client_id) || RestAdapter::Utils.is_blank?(admin_client_secret)
+        fail RestAdapter::Errors::ArgumentError,
+             'Invalid input, expected admin client id and admin client secret'
+      end
       @admin_credentials[:clientid] = admin_client_id ? admin_client_id : nil
       @admin_credentials[:secret] = admin_client_secret ? admin_client_secret : nil
     end
@@ -103,6 +107,10 @@ module CloudFS
       validate_session
       fail RestAdapter::Errors::OperationNotAllowedError,
            'Cannot re-authenticate, initialize new session instance' if is_linked?
+      fail RestAdapter::Errors::ArgumentError,
+           'Invalid argument, must pass username' if RestAdapter::Utils.is_blank?(username)
+      fail RestAdapter::Errors::ArgumentError,
+           'Invalid argument, must pass password' if RestAdapter::Utils.is_blank?(password)
 
       @rest_adapter.authenticate(username, password)
     end
@@ -172,10 +180,21 @@ module CloudFS
            'New account creation with already linked session is not possible,
 						initialize new session instance' if is_linked?
 
+      fail RestAdapter::Errors::ArgumentError,
+           'Invalid argument, must pass username' if RestAdapter::Utils.is_blank?(username)
+      fail RestAdapter::Errors::ArgumentError,
+           'Invalid argument, must pass password' if RestAdapter::Utils.is_blank?(password)
+
+      if RestAdapter::Utils.is_blank?(@admin_credentials[:clientid]) ||
+          RestAdapter::Utils.is_blank?(@admin_credentials[:secret])
+        fail RestAdapter::Errors::ArgumentError,
+             'Please set the admin credentials in order to create account.'
+      end
+
       admin_client = RestAdapter.new(
-          @admin_credentials[:clientid],
-          @admin_credentials[:secret], @admin_credentials[:host],
-          http_debug: @http_debug)
+      @admin_credentials[:clientid],
+      @admin_credentials[:secret], @admin_credentials[:host],
+      http_debug: @http_debug)
 
       begin
         response = admin_client.create_account(

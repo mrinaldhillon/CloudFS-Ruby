@@ -25,7 +25,7 @@ module CloudFS
     #	@param upload_io [Boolean] default: false,
     #		if set to false, file_system_path is considered to be a local file path
     #
-    # @return [File] instance refrence to uploaded file
+    # @return [File] instance reference to uploaded file
     # @raise [Client::Errors::SessionNotLinked, Client::Errors::ServiceError,
     #		Client::Errors::InvalidItemError, Client::Errors::OperationNotAllowedError]
     # @example
@@ -48,6 +48,8 @@ module CloudFS
     #			io.close
     def upload(file_system_path, name: nil, exists: 'FAIL', upload_io: false)
       FileSystemCommon.validate_item_state(self)
+      fail RestAdapter::Errors::ArgumentError,
+           'Invalid input, expected file system path.' if RestAdapter::Utils.is_blank?(file_system_path)
 
       if upload_io == false
         response = ::File.open(file_system_path, 'r') do |file|
@@ -72,6 +74,8 @@ module CloudFS
     #		RestAdapter::Errors::OperationNotAllowedError]
     def create_folder(name, exists: 'FAIL')
       FileSystemCommon.validate_item_state(self)
+      fail RestAdapter::Errors::ArgumentError,
+           'Invalid argument, must pass name' if RestAdapter::Utils.is_blank?(name)
 
       properties = @rest_adapter.create_folder(name, path: @url, exists: exists)
       FileSystemCommon.create_item_from_hash(@rest_adapter, parent: @url, ** properties)

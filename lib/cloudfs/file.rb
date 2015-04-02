@@ -26,8 +26,11 @@ module CloudFS
     # @return [String] the mime type of file
     attr_reader :mime
 
-    # see #mime
+    # Sets the mime type of the item and updates to CloudFS
     def mime=(value)
+      fail RestAdapter::Errors::ArgumentError,
+           'Invalid input, expected new mime' if RestAdapter::Utils.is_blank?(value)
+
       @mime = value
       @changed_properties[:mime] = value
       change_attributes(@changed_properties)

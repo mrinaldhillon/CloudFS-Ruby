@@ -33,6 +33,9 @@ module CloudFS
     # @param password [String] current password of the share.
     def set_name(new_name, password: nil)
       FileSystemCommon.validate_share_state(self)
+      fail RestAdapter::Errors::ArgumentError,
+           'Invalid input, expected new name' if RestAdapter::Utils.is_blank?(new_name)
+
       response = @rest_adapter.alter_share_info(
           @share_key,
           current_password: password,
@@ -169,6 +172,9 @@ module CloudFS
     #		RestAdapter::Errors::InvalidShareError]
     def set_password(password, current_password: nil)
       FileSystemCommon.validate_share_state(self)
+      fail RestAdapter::Errors::ArgumentError,
+           'Invalid input, expected the password' if RestAdapter::Utils.is_blank?(password)
+
       response = @rest_adapter.alter_share_info(
           @share_key,
           current_password: current_password,
