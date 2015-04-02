@@ -7,9 +7,9 @@ Gem::Specification.new do |spec|
   spec.name          = "cloudfs"
   spec.version       = CloudFS::VERSION
   spec.authors       = ['Bitcasa Inc.']
-  spec.email         = ['dstrong@bitcasa.com']
+  spec.email         = ['sdks@bitcasa.com']
   spec.summary       = 'CloudFS SDK for Ruby'
-  spec.description   = 'CloudFS Ruby SDK for Bitcasa cloud storage filesystem'
+  spec.description   = 'Allow developers to easliy access Bitcasa CloudFS'
   spec.homepage      = "https://github.com/bitcasa/CloudFS-Ruby"
 	spec.license			 = "MIT"
   spec.files         = Dir['lib/**/*', '.yardopts']
