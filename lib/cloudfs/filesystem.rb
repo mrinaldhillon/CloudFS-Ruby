@@ -103,7 +103,7 @@ module CloudFS
       if path.is_a?(String)
         FileSystemCommon.get_item(@rest_adapter, path)
       else
-        return nil
+        nil
       end
     end
 

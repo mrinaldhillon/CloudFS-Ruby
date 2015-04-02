@@ -140,7 +140,7 @@ module CloudFS
     def initialize(rest_adapter, parent: nil, parent_state: nil, in_trash: false,
                    in_share: false, old_version: false, ** properties)
       fail RestAdapter::Errors::ArgumentError,
-           'Invalid RestAdaper, input type must be CloudFS::RestAdapter' unless rest_adapter.is_a?(RestAdapter)
+           'Invalid RestAdapter, input type must be CloudFS::RestAdapter' unless rest_adapter.is_a?(RestAdapter)
 
       @rest_adapter = rest_adapter
       set_item_properties(parent: parent, parent_state: parent_state, in_trash: in_trash,

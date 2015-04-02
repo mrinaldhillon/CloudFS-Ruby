@@ -1145,7 +1145,7 @@ module CloudFS
                          :content => exists} if exists
       multipart_body << {'Content-Disposition' =>
                              "form-data; name=\"file\"; filename=\"#{filename}\"",
-                         "Content-Type" => 'application/octet-stream',
+                         'Content-Type' => 'application/octet-stream',
                          :content => file}
       multipart_body
     end

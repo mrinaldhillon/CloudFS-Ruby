@@ -98,7 +98,7 @@ module CloudFS
     def get_folder_url(folder)
       return nil if RestAdapter::Utils.is_blank?(folder)
       return folder.url if (folder.respond_to?(:url) &&
-          folder.respond_to?(:type) && (folder.type == "folder"))
+          folder.respond_to?(:type) && (folder.type == 'folder'))
       return folder if folder.is_a?(String)
       fail RestAdapter::Errors::ArgumentError,
            "Invalid input of type #{folder.class}, expected destination item of type CloudFS::Folder or string"
@@ -202,9 +202,8 @@ module CloudFS
     #
     # @raise [RestAdapter::Errors::ServiceError]
     def get_item_properties_from_server(rest_adapter, parent_url, id, type, in_trash: false)
-#	item_url = parent_url == "/" ? "/#{id}" : "#{parent_url}/#{id}"
       item_url = parent_url.nil? ? "#{id}" : "#{parent_url}/#{id}"
-      if in_trash == true
+      if in_trash
         properties = rest_adapter.browse_trash(path: item_url).fetch(:meta)
       elsif type == 'folder'
         properties = rest_adapter.get_folder_meta(item_url)
@@ -221,10 +220,8 @@ module CloudFS
     #
     # @raise [RestAdapter::Errors::ServiceError]
     def get_item(rest_adapter, item_url)
-
       item_meta = rest_adapter.get_file_meta(item_url)
-      item = create_item_from_hash(rest_adapter, ** item_meta)
-
+      create_item_from_hash(rest_adapter, ** item_meta)
     end
 
   end

@@ -141,8 +141,8 @@ module CloudFS
       FileSystemCommon.validate_item_state(self)
 
       if bytecount == 0 || @offset >= @size
-        return yield "" if block_given?
-        return ""
+        return yield '' if block_given?
+        return ''
       end
 
       # read till end of file if no bytecount is given

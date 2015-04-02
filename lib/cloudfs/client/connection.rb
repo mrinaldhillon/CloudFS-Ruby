@@ -59,7 +59,7 @@ module CloudFS
 
       # Sends request to specified url,
       #		calls HTTPClient#request, retries http 500 level errors with
-      #			exponetial delay upto max retries
+      #			exponential delay upto max retries
       #
       # @param method [Symbol] (:get, :put, :post, :delete) http verb
       # @param uri [String, URI] represents complete url to web resource
@@ -70,7 +70,7 @@ module CloudFS
       # @option params [Array<Hash>, Hash, String] :body {} to post multipart forms,
       #			key:value forms, string
       #
-      # @return [Hash] response hash containing content, conten_type and http code
+      # @return [Hash] response hash containing content, content_type and http code
       #			{ :content => String, :content_type => String, :code => Fixnum }
       # @raise [Errors::ClientError, Errors::ServerError]
       # 		ClientError wraps httpclient exceptions
@@ -128,12 +128,12 @@ module CloudFS
         end
       end
 
-      # Check if retry count is less that max retries and exponetially sleep
+      # Check if retry count is less that max retries and exponentially sleep
       # @param retry_count [Fixnum] current count of retry
       # @return [Boolean]
       def do_retry?(retry_count)
         # max retries + 1 to accommodate try
-        retry_count < @max_retries + 1 ? sleep(2**retry_count*0.3) && true : false
+        retry_count < @max_retries + 1 ? sleep(2**retry_count*0.3) : false
       end
 
       # Set request context

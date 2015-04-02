@@ -79,7 +79,7 @@ module CloudFS
       # @return [Array<Object>]	values at found fields
       def hash_to_arguments(hash, *field)
         if field.any? { |f| hash.key?(f) }
-          return hash.values_at(*field)
+          hash.values_at(*field)
         end
       end
 
